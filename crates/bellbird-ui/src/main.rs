@@ -1,6 +1,7 @@
 mod application;
 pub mod directory_tree;
 pub mod notes_list;
+pub mod default_layout;
 
 // fn load_stylesheet() {
 // 	let provider = CssProvider::new();
