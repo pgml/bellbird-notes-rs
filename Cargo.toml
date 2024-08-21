@@ -1,0 +1,19 @@
+[workspace]
+members = [
+	"crates/bellbird-ui",
+	"crates/bellbird-core"
+]
+default-members = [
+	"crates/bellbird-ui"
+]
+
+resolver = "2"
+
+[workspace.package]
+authors = ["Rico Dang"]
+edition = "2021"
+homepage = ""
+license = ""
+repository = ""
+rust-version = "1.74"
+version = "0.1.0"
