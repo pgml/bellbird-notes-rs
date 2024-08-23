@@ -1,5 +1,5 @@
 pub const DEFAULT_STYLE: &str = "
-.main-window {
+window {
 	background-color: #F0F0F0;
 	color: #222;
 }
@@ -10,12 +10,12 @@ pub const DEFAULT_STYLE: &str = "
 	color: #A5A1BC;
 }
 
-.directories-panel treeview {
-	background-color: #F0F0F0;
+.directories-panel listview {
+	background-color: transparent;
 }
 
-.directories-panel treeview.view {
-	border-color: #cccccc;
+.directories-panel row {
+	border-radius: 4px;
 }
 
 .notes-panel {

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+	<template class="ListViewRow" parent="GtkBox">
+		<property name="orientation">horizontal</property>
+		<child>
+			<object class="GtkLabel" id="name">
+				<property name="halign">start</property>
+        <property name="margin-top">5</property>
+        <property name="margin-bottom">5</property>
+        <property name="margin-start">5</property>
+        <property name="margin-end">5</property>
+			</object>
+		</child>
+		<child>
+			<object class="GtkLabel" id="path">
+				<property name="visible">false</property>
+			</object>
+		</child>
+	</template>
+</interface>

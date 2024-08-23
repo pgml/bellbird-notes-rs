@@ -1,203 +1,114 @@
-use bellbird_core::directories::Directories;
+use std::cell::RefCell;
+use std::rc::Rc;
 
-use glib::closure_local;
+use gtk::gio::ActionEntry;
 use gtk::prelude::*;
+use gtk::{glib, ApplicationWindow};
 
-use relm4::{
-	prelude::*,
-	typed_view::list::TypedListView
-};
-
+use crate::editor_view::Editor;
+use crate::notes_list::NotesList;
 use crate::{
-	default_layout, directory_tree::DirectoryTree, notes_list::{NotesList, NotesListItem}
+	default_layout,
+	directory_tree,
+	editor_view,
+	notes_list
 };
 
-#[derive(Debug)]
-struct App {
-	directories: gtk::TreeView,
-	notes: TypedListView<NotesListItem, gtk::SingleSelection>,
+const APP_ID: &str = "org.bellbird.notes";
+
+pub fn run() -> glib::ExitCode {
+	// Create a new application
+	let app = adw::Application::builder().application_id(APP_ID).build();
+	// Connect to "activate" signal of `app`
+	app.connect_startup(|_| load_css());
+	app.connect_activate(build_ui);
+	// Run the application
+	app.run()
 }
 
-#[derive(Debug)]
-enum Msg {
-	UpdateListBox(String),
+fn build_ui(app: &adw::Application) {
+	let window_box = gtk::Box::builder()
+		.orientation(gtk::Orientation::Vertical)
+		.build();
+
+	let panels_wrapper = gtk::Box::builder()
+		.orientation(gtk::Orientation::Horizontal)
+		.spacing(5)
+		.build();
+
+	// Create a window
+	let window = ApplicationWindow::builder()
+		.application(app)
+		.title("Bellbird Notes")
+		.default_width(1000)
+		.default_height(600)
+		.child(&window_box)
+		.build();
+
+	//let path = "/home/rico/.bellbird-notes/Bands/Stay Puft/Texte/";
+	//let note_path = "/home2/pgml/Projekte/Godot/dear-guests/Characters/Scripts/Controller.cs";
+	let path = "";
+	let note_path = "";
+	let notes_list = Rc::new(RefCell::new(NotesList::new(path)));
+	notes_list.borrow_mut().update_path(path);
+
+	let editor = Rc::new(RefCell::new(Editor::new(note_path)));
+	editor.borrow_mut().update_path(note_path);
+
+	register_update_notes_action(&window, &notes_list);
+	register_open_note_action(&window, &editor);
+
+	panels_wrapper.append(&directory_tree::build_ui());
+	panels_wrapper.append(&notes_list::build_ui(notes_list));
+	panels_wrapper.append(&editor_view::build_ui(editor));
+
+	window_box.append(&panels_wrapper);
+
+	// Present window
+	window.present();
 }
 
-#[relm4::component]
-impl SimpleComponent for App {
-	type Init = u8;
-	type Input = Msg;
-	type Output = ();
+fn load_css() {
+	// Load the CSS file and add it to the provider
+	let provider = gtk::CssProvider::new();
+	provider.load_from_string(default_layout::DEFAULT_STYLE);
 
-	view! {
-		gtk::Window {
-			set_title: Some("Bellbird Notes"),
-			set_default_size: (1000, 600),
-			set_css_classes: &["main-window"],
-
-			gtk::Box {
-				set_orientation: gtk::Orientation::Vertical,
-
-				gtk::Box {
-					set_orientation: gtk::Orientation::Horizontal,
-					set_spacing: 5,
-					set_margin_all: 5,
-
-					gtk::Box {
-						set_orientation: gtk::Orientation::Vertical,
-						set_vexpand: true,
-						set_valign: gtk::Align::Fill,
-						set_width_request: 200,
-						set_css_classes: &["directories-panel"],
-
-						gtk::Label {
-							#[watch]
-							set_label: &format!("Directories"),
-							set_margin_all: 5,
-							set_halign: gtk::Align::Start,
-						},
-
-						gtk::ScrolledWindow {
-							set_hscrollbar_policy: gtk::PolicyType::Never,
-							set_css_classes: &["scrolled-window"],
-
-							#[local_ref]
-							directory_tree -> gtk::TreeView {
-								set_vexpand: true,
-								set_valign: gtk::Align::Fill,
-								set_activate_on_single_click: true,
-								set_headers_visible: false,
-							}
-						}
-					},
-
-					gtk::Box {
-						set_orientation: gtk::Orientation::Vertical,
-						set_vexpand: true,
-						set_valign: gtk::Align::Fill,
-						set_width_request: 200,
-						set_css_classes: &["notes-panel"],
-
-						gtk::Label {
-							#[watch]
-							set_label: &format!("Notes"),
-							set_margin_all: 5,
-							set_halign: gtk::Align::Start,
-						},
-
-						gtk::ScrolledWindow {
-							set_hscrollbar_policy: gtk::PolicyType::Never,
-
-							#[local_ref]
-							notes_list_box -> gtk::ListView {
-								set_vexpand: true,
-								set_valign: gtk::Align::Fill,
-								set_margin_all: 5,
-							}
-						}
-					},
-
-					gtk::Box {
-						set_orientation: gtk::Orientation::Vertical,
-						set_css_classes: &["editor-panel"],
-
-						gtk::Label {
-							#[watch]
-							set_label: &format!("Bellbird Notes"),
-							set_margin_all: 5,
-							set_halign: gtk::Align::Start,
-						},
-
-						gtk::ScrolledWindow {
-							set_hscrollbar_policy: gtk::PolicyType::Never,
-
-							gtk::TextView {
-								set_left_margin: 10,
-								set_right_margin: 10,
-								set_top_margin: 10,
-								set_bottom_margin: 10,
-								set_indent: 10,
-								set_wrap_mode: gtk::WrapMode::Word,
-								set_vexpand: true,
-								set_valign: gtk::Align::Fill,
-								set_hexpand: true,
-								set_halign: gtk::Align::Fill,
-							},
-						},
-					}
-				},
-
-				// gtk::Box {
-				// 	set_orientation: gtk::Orientation::Horizontal,
-				// 	set_height_request: 30,
-				// 	set_css_classes: &["status-bar"],
-				// }
-			}
-		}
-	}
-
-	// Initialize the component.
-	fn init(
-		_: Self::Init,
-		root: Self::Root,
-		sender: ComponentSender<Self>,
-	) -> ComponentParts<Self> {
-		let directories = DirectoryTree::build_tree_view();
-		let directory_list_store = DirectoryTree::new().list_store;
-		let notes: TypedListView<NotesListItem, gtk::SingleSelection> = NotesList::build_list_box("");
-
-		let select = directories.selection();
-		select.connect_closure("changed", false, closure_local!(move |selection: gtk::TreeSelection| {
-			match selection.selected() {
-				Some((model, tree_iter)) => {
-					let selected_row = model.get::<String>(&tree_iter, 1);
-					sender.input(Msg::UpdateListBox(selected_row));
-				},
-				None => println!("nothing's changed"),
-			};
-		}));
-
-
-		let model = App {
-			directories,
-			notes,
-		};
-
-		let notes_list_box = &model.notes.view;
-		let directory_tree = &model.directories;
-		let widgets = view_output!();
-		let bellbird_root = Directories::get_root_directory();
-
-		widgets.directory_tree.set_model(Some(&directory_list_store));
-		DirectoryTree::build(&directory_list_store, None, &bellbird_root);
-
-		ComponentParts { model, widgets }
-	}
-
-	fn update(&mut self, msg: Self::Input, _sender: ComponentSender<Self>) {
-		match msg {
-			Msg::UpdateListBox(path) => {
-				self.notes.clear();
-				// self.notes = NotesList::build_list_box(&path);
-				match bellbird_core::notes::Notes::list(&path) {
-					Ok(notes) => {
-						for note in notes {
-							self.notes.append(NotesListItem::new(note.name))
-						}
-					},
-					_ => println!("No notes found")
-				}
-			}
-		}
-	}
+	// Add the provider to the default screen
+	gtk::style_context_add_provider_for_display(
+		&gtk::gdk::Display::default().expect("Could not connect to a display."),
+		&provider,
+		gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+	);
 }
 
+fn register_update_notes_action(window: &ApplicationWindow, notes_list: &Rc<RefCell<NotesList>>) {
+	let notes_list_clone = notes_list.clone();
+	let action_update_notes = ActionEntry::builder("update-notes")
+		.parameter_type(Some(&String::static_variant_type()))
+		.activate(move |_, _action, parameter| {
+			let path = parameter
+				.expect("Could not get Parameter")
+				.get::<String>()
+				.expect("The variant nees to be of type `String`");
+			notes_list_clone.borrow_mut().update_path(&path);
+		})
+		.build();
 
-pub fn run() {
-	let app = RelmApp::new("org.bellbird.notes");
-	relm4::set_global_css(default_layout::DEFAULT_STYLE);
-
-	// app.set_global_css_from_file("/home2/pgml/Projekte/bellbird_relm4/src/default.css");
-	app.run::<App>(0);
+	window.add_action_entries([action_update_notes]);
 }
 
+fn register_open_note_action(window: &ApplicationWindow, editor: &Rc<RefCell<Editor>>) {
+	let editor_clone = editor.clone();
+	let action_open_notes = ActionEntry::builder("open-note")
+		.parameter_type(Some(&String::static_variant_type()))
+		.activate(move |_, _action, parameter| {
+			let path = parameter
+				.expect("Could not get Parameter")
+				.get::<String>()
+				.expect("The variant nees to be of type `String`");
+			editor_clone.borrow_mut().update_path(&path);
+		})
+		.build();
+
+	window.add_action_entries([action_open_notes]);
+}
