@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use bellbird_core::notes::Notes;
+use bellbird_core::{config::Config, notes::Notes};
 use gtk::{gio, glib::{self}, prelude::*};
 use sourceview5::{
 	self,
@@ -102,7 +102,7 @@ impl Editor	{
 		}
 	}
 
-	pub fn get_view(&self) -> &View {
+	pub fn view(&self) -> &View {
 		&self.editor_view
 	}
 
@@ -117,7 +117,7 @@ impl Editor	{
 }
 
 pub fn build_ui(editor: Rc<RefCell<Editor>>) -> gtk::Box {
-	let bellbird = App::new();
+	let config = Config::new(App::version());
 	let editor_panel = gtk::Box::builder()
 		.orientation(gtk::Orientation::Vertical)
 		.margin_top(5)
@@ -126,7 +126,7 @@ pub fn build_ui(editor: Rc<RefCell<Editor>>) -> gtk::Box {
 		.build();
 
 	let editor_panel_label = gtk::Label::builder()
-		.label(bellbird.title)
+		.label(config.app_name)
 		.margin_top(5)
 		.margin_start(5)
 		.margin_bottom(5)
@@ -134,7 +134,7 @@ pub fn build_ui(editor: Rc<RefCell<Editor>>) -> gtk::Box {
 		.build();
 
 	let scrollable_window = gtk::ScrolledWindow::builder()
-		.child(editor.borrow_mut().get_view())
+		.child(editor.borrow_mut().view())
 		.build();
 
 	editor_panel.append(&editor_panel_label);

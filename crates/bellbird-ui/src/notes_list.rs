@@ -99,7 +99,7 @@ impl NotesList {
 		};
 	}
 
-	pub fn get_view(&self) -> &gtk::ListView {
+	pub fn view(&self) -> &gtk::ListView {
 		&self.list_view
 	}
 }
@@ -129,7 +129,7 @@ pub fn build_ui(notes_list: Rc<RefCell<NotesList>>) -> gtk::Box {
 
 	// let notes_list = NotesList::new("");
 	let scrollable_window = gtk::ScrolledWindow::builder()
-		.child(notes_list.borrow_mut().get_view())
+		.child(notes_list.borrow_mut().view())
 		.build();
 
 	notes_panel.append(&notes_panel_label);

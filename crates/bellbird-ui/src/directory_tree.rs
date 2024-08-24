@@ -26,7 +26,7 @@ fn append_item_to_model(model: &gio::ListStore, path: &str) {
 }
 
 fn create_tree_view() -> gtk::ListView {
-	let bellbird_root = Directories::get_root_directory();
+	let bellbird_root = Directories::root_directory();
 	let path = &bellbird_root;
 	let model = gio::ListStore::new::<gtk::Label>();
 

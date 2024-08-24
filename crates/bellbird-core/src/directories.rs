@@ -54,11 +54,11 @@ impl Directories {
 		Ok(directories)
 	}
 
-	pub fn get_root_directory() -> String {
-		format!("{}/{BELLBIRD_DEFAULT_DIR}", Self::get_home_directory())
+	pub fn root_directory() -> String {
+		format!("{}/{BELLBIRD_DEFAULT_DIR}", Self::home_directory())
 	}
 
-	fn get_home_directory() -> String {
+	fn home_directory() -> String {
 		match UserDirs::new() {
 			Some(user_dirs) => {
 				user_dirs.home_dir().to_str().unwrap().to_string()
