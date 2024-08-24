@@ -18,4 +18,4 @@ sourceview5 = "0.9.0"
 stable = []
 snapshot = []
 
-default = ["stable"]
+default = ["snapshot"]
