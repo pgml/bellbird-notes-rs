@@ -1,13 +1,21 @@
 use std::{cell::RefCell, rc::Rc};
 
-use gtk::{gio, glib, prelude::*};
-use sourceview5::{self, Buffer, View};
+use bellbird_core::notes::Notes;
+use gtk::{gio, glib::{self, source}, prelude::*, subclass::im_context};
+use sourceview5::{
+	self,
+	ffi::GtkSourceVimIMContext,
+	Buffer,
+	View,
+	prelude::ViewExt
+};
 
 #[derive(Debug, Clone)]
 pub struct Editor {
 	pub path: String,
 	//pub buffers: Vec<Buffer>,
 	pub buffer: Buffer,
+	//pub editor_view: gtk::TextView,
 	pub editor_view: View,
 }
 
@@ -27,9 +35,9 @@ impl Editor	{
 		editor_view.set_hexpand(true);
 		editor_view.set_halign(gtk::Align::Fill);
 		editor_view.set_wrap_mode(gtk::WrapMode::WordChar);
-		// editor_view.show_line_numbers(true)
-		// editor_view.monospace(true)
-		// editor_view.tab_width(4)
+		editor_view.set_show_line_numbers(true);
+		// editor_view.set_monospace(true);
+		// editor_view.set_tab_width(4);
 
 		Self {
 			path: path.to_string(),
@@ -68,16 +76,49 @@ impl Editor	{
 		self.path = path.to_string();
 		let buffer = self.add_buffer(path);
 		self.editor_view.set_buffer(Some(&buffer));
+
+		// disable editor if no note is loaded to avoid
+		// writing into nothing
+		let controller = gtk::EventControllerKey::new();
+		if !self.path.is_empty() {
+			let buffer_clone = buffer.clone();
+			let path_clone = self.path.clone();
+			controller.connect_key_released(move |_, _keyval, _keycode, _state| {
+				let buffer_start = buffer_clone.start_iter();
+				let buffer_end = buffer_clone.end_iter();
+				Notes::write_to_file(
+					path_clone.to_string(),
+					buffer_clone.text(&buffer_start, &buffer_end, false).to_string()
+				);
+			});
+			controller.set_propagation_phase(gtk::PropagationPhase::Capture);
+			self.editor_view.add_controller(controller);
+			self.set_editor_editable(true);
+		}
+		else {
+			self.set_editor_editable(false);
+		}
 	}
 
 	pub fn get_view(&self) -> &View {
 		&self.editor_view
+	}
+
+	pub fn editor_editable(&self) -> bool {
+		self.editor_view.is_editable() && self.editor_view.is_cursor_visible()
+	}
+
+	pub fn set_editor_editable(&self, editable: bool) {
+		self.editor_view.set_editable(editable);
+		self.editor_view.set_cursor_visible(editable);
 	}
 }
 
 pub fn build_ui(editor: Rc<RefCell<Editor>>) -> gtk::Box {
 	let editor_panel = gtk::Box::builder()
 		.orientation(gtk::Orientation::Vertical)
+		.margin_top(5)
+		.margin_bottom(5)
 		.css_classes(["editor-panel"])
 		.build();
 

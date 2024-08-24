@@ -7,7 +7,7 @@ use gtk::{
 	prelude::*
 };
 
-use crate::list_view_row::ListViewItem;
+use crate::notes_list_row::NotesListItem;
 
 #[derive(Debug, Clone)]
 pub struct NotesList {
@@ -24,14 +24,14 @@ impl NotesList {
 		let factory = gtk::SignalListItemFactory::new();
 		factory.connect_setup(move |_factory, item| {
 			let item = item.downcast_ref::<gtk::ListItem>().unwrap();
-			let row = ListViewItem::default();
+			let row = NotesListItem::default();
 			item.set_child(Some(&row));
 		});
 
 		factory.connect_bind(move |_factory, item| {
 			let item = item.downcast_ref::<gtk::ListItem>().unwrap();
 			let label = item.item().and_downcast::<gtk::Label>().unwrap();
-			let child = item.child().and_downcast::<ListViewItem>().unwrap();
+			let child = item.child().and_downcast::<NotesListItem>().unwrap();
 			child.append_tree_item(&label);
 		});
 
@@ -43,11 +43,12 @@ impl NotesList {
 			app_info1
 				.label()
 				.to_lowercase()
-				.cmp(&app_info2.label().to_lowercase())
+				.cmp(&app_info1.label().to_lowercase())
 				.into()
 		});
 		let sorted_model = gtk::SortListModel::new(Some(model_clone), Some(sorter));
 		let selection_model = gtk::SingleSelection::new(Some(sorted_model));
+		selection_model.set_autoselect(false);
 
 		let list_view = gtk::ListView::builder()
 			.model(&selection_model)
@@ -111,6 +112,10 @@ pub fn build_ui(notes_list: Rc<RefCell<NotesList>>) -> gtk::Box {
 		.vexpand(true)
 		.valign(gtk::Align::Fill)
 		.width_request(200)
+		.margin_top(5)
+		.margin_top(5)
+		.margin_bottom(5)
+		.margin_bottom(5)
 		.css_classes(["notes-panel"])
 		.build();
 

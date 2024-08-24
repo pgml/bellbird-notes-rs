@@ -51,5 +51,12 @@ impl Notes {
 		notes.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
 		Ok(notes.into())
 	}
+
+	pub fn write_to_file(path: String, content: String) -> bool {
+		match fs::write(path, content) {
+			Ok(_) => true,
+			Err(_e) => false,
+		}
+	}
 }
 

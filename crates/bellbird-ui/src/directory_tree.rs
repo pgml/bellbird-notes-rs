@@ -4,42 +4,48 @@ use gtk::{
 	gio, prelude::*
 };
 
-use crate::list_view_row::ListViewItem;
+use crate::directory_tree_row::DirectoryTreeRow;
 
-fn create_tree_view() -> gtk::ListView {
-	// let model = gio::ListStore::new<TreeItem::static_type()>();
-
-	let bellbird_root = Directories::get_root_directory();
-	let path = &bellbird_root;
-
-	// let model = gio::ListStore::new::<ListViewItem>();
-	let model = gio::ListStore::new::<gtk::Label>();
-	match Directories::list(path, false) {
+fn append_item_to_model(model: &gio::ListStore, path: &str) {
+	match Directories::list(path, true) {
 		Ok(directories) => {
 			directories.iter().for_each(|directory| {
+				let mut dir_name = directory.name.clone();
+				//if directory.children.len() > 0 {
+				//	dir_name = format!("+ {dir_name}");
+				//}
+
 				let label = gtk::Label::builder()
-					.label(&directory.name)
+					.label(&dir_name)
 					.name(&directory.path)
 					.build();
 
-				// println!("{:?}", label);
-				model.append(&label)
+				model.append(&label);
+				//append_item_to_model(model, &directory.path);
 			})
 		},
 		_ => println!("No directories found")
 	};
+}
+
+fn create_tree_view() -> gtk::ListView {
+	let bellbird_root = Directories::get_root_directory();
+	let path = &bellbird_root;
+	let model = gio::ListStore::new::<gtk::Label>();
+
+	append_item_to_model(&model, path);
 
   let factory = gtk::SignalListItemFactory::new();
 	factory.connect_setup(move |_factory, item| {
 		let item = item.downcast_ref::<gtk::ListItem>().unwrap();
-		let row = ListViewItem::default();
+		let row = DirectoryTreeRow::new();
 		item.set_child(Some(&row));
 	});
 
 	factory.connect_bind(move |_factory, item| {
 		let item = item.downcast_ref::<gtk::ListItem>().unwrap();
 		let label = item.item().and_downcast::<gtk::Label>().unwrap();
-		let child = item.child().and_downcast::<ListViewItem>().unwrap();
+		let child = item.child().and_downcast::<DirectoryTreeRow>().unwrap();
 		child.append_tree_item(&label);
 	});
 
@@ -51,11 +57,12 @@ fn create_tree_view() -> gtk::ListView {
 		app_info1
 			.label()
 			.to_lowercase()
-			.cmp(&app_info2.label().to_lowercase())
+			.cmp(&app_info1.label().to_lowercase())
 			.into()
 	});
 	let sorted_model = gtk::SortListModel::new(Some(model), Some(sorter));
 	let selection_model = gtk::SingleSelection::new(Some(sorted_model));
+	selection_model.set_autoselect(false);
 
 	let list_view = gtk::ListView::builder()
 		.model(&selection_model)
@@ -86,6 +93,9 @@ pub fn build_ui() -> gtk::Box {
 		.vexpand(true)
 		.valign(gtk::Align::Fill)
 		.width_request(200)
+		.margin_top(5)
+		.margin_bottom(5)
+		.margin_start(5)
 		.css_classes(["directories-panel"])
 		.build();
 
@@ -105,11 +115,4 @@ pub fn build_ui() -> gtk::Box {
 	directory_panel.append(&scrollable_window);
 
 	directory_panel
-}
-
-#[derive(Debug)]
-pub struct DirectoryTree;
-
-impl DirectoryTree {
-
 }

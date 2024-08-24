@@ -36,12 +36,14 @@ fn build_ui(app: &adw::Application) {
 		.spacing(5)
 		.build();
 
+	//let headerbar = gtk::HeaderBar::new();
 	// Create a window
 	let window = ApplicationWindow::builder()
 		.application(app)
 		.title("Bellbird Notes")
 		.default_width(1000)
 		.default_height(600)
+		//.titlebar(&headerbar)
 		.child(&window_box)
 		.build();
 

@@ -4,16 +4,16 @@ use anyhow::Result;
 use directories::UserDirs;
 
 // temporary
-const BELLBIRD_DEFAULT_DIR: &str = ".bellbird-notes";
+const BELLBIRD_DEFAULT_DIR: &str = ".bellbird-notes-snapshot";
 
 #[derive(Debug, Clone)]
 pub struct Directory {
 	pub name: String,
 	pub path: String,
 	pub children: Vec<Directory>,
-	pub nbr_notes: usize,
-	pub nbr_folders: usize,
-	pub is_expanded: bool,
+	//pub nbr_notes: usize,
+	//pub nbr_folders: usize,
+	//pub is_expanded: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -42,9 +42,9 @@ impl Directories {
 					else {
 						vec![]
 					},
-					nbr_notes: 0,
-					nbr_folders: 0,
-					is_expanded: false,
+					//nbr_notes: 0,
+					//nbr_folders: 0,
+					//is_expanded: false,
 				});
 			}
 		}
