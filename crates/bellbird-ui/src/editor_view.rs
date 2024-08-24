@@ -26,6 +26,7 @@ impl Editor	{
 		editor_view.set_valign(gtk::Align::Fill);
 		editor_view.set_hexpand(true);
 		editor_view.set_halign(gtk::Align::Fill);
+		editor_view.set_wrap_mode(gtk::WrapMode::WordChar);
 		// editor_view.show_line_numbers(true)
 		// editor_view.monospace(true)
 		// editor_view.tab_width(4)
