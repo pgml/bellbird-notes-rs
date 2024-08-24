@@ -10,8 +10,8 @@ use gtk::{
 };
 
 #[derive(Debug, Default, gtk::CompositeTemplate)]
-#[template(file = "../../data/ui/list_view_row.ui")]
-pub struct ListViewItem {
+#[template(file = "../../data/ui/notes_list_row.ui")]
+pub struct NotesListItem {
 	#[template_child]
 	pub name: TemplateChild<gtk::Label>,
 	#[template_child]
@@ -23,9 +23,9 @@ pub struct ListViewItem {
 }
 
 #[glib::object_subclass]
-impl ObjectSubclass for ListViewItem {
-	const NAME: &'static str = "ListViewRow";
-	type Type = super::ListViewItem;
+impl ObjectSubclass for NotesListItem {
+	const NAME: &'static str = "NotesListRow";
+	type Type = super::NotesListItem;
 	type ParentType = gtk::Box;
 
 	fn class_init(klass: &mut Self::Class) {
@@ -37,7 +37,7 @@ impl ObjectSubclass for ListViewItem {
 	}
 }
 
-impl ObjectImpl for ListViewItem {
+impl ObjectImpl for NotesListItem {
 	fn signals() -> &'static [Signal] {
 		static SIGNALS: OnceLock<Vec<Signal>> = OnceLock::new();
 		SIGNALS.get_or_init(|| {
@@ -85,10 +85,10 @@ impl ObjectImpl for ListViewItem {
 	// }
 }
 
-impl BoxImpl for ListViewItem {}
-impl WidgetImpl for ListViewItem {}
+impl BoxImpl for NotesListItem {}
+impl WidgetImpl for NotesListItem {}
 
-impl ListViewItem {
+impl NotesListItem {
 	pub fn emit_activate(&self) {
 		self.obj().emit_by_name::<()>("activated", &[]);
 	}

@@ -1,19 +1,23 @@
 mod imp;
 
-use gtk::{glib::{self}, prelude::*, subclass::prelude::*};
+use gtk::{glib, prelude::*, subclass::prelude::*};
 
 glib::wrapper! {
-	pub struct ListViewItem(ObjectSubclass<imp::ListViewItem>)
+	pub struct NotesListItem(ObjectSubclass<imp::NotesListItem>)
 		@extends gtk::Widget, gtk::Box;
 }
 
-impl Default for ListViewItem {
+impl Default for NotesListItem {
 	fn default() -> Self {
 		glib::Object::new()
 	}
 }
 
-impl ListViewItem {
+impl NotesListItem {
+	pub fn new()  {
+		// let object = Object::new();
+	}
+
 	pub fn append_tree_item(&self, item_label: &gtk::Label) {
 		let imp = self.imp();
 		// println!("{:?} {:?}, asdas", &item_label.text(), &item_label.text());

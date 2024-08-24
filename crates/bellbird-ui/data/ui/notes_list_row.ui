@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-	<template class="ListViewRow" parent="GtkBox">
+	<template class="NotesListRow" parent="GtkBox">
 		<property name="orientation">horizontal</property>
 		<child>
 			<object class="GtkLabel" id="name">
