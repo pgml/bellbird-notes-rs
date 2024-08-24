@@ -10,6 +10,8 @@ use sourceview5::{
 	prelude::ViewExt
 };
 
+use crate::application::App;
+
 #[derive(Debug, Clone)]
 pub struct Editor {
 	pub path: String,
@@ -35,7 +37,8 @@ impl Editor	{
 		editor_view.set_hexpand(true);
 		editor_view.set_halign(gtk::Align::Fill);
 		editor_view.set_wrap_mode(gtk::WrapMode::WordChar);
-		editor_view.set_show_line_numbers(true);
+		editor_view.set_highlight_current_line(true);
+		//editor_view.set_show_line_numbers(true);
 		// editor_view.set_monospace(true);
 		// editor_view.set_tab_width(4);
 
@@ -115,6 +118,7 @@ impl Editor	{
 }
 
 pub fn build_ui(editor: Rc<RefCell<Editor>>) -> gtk::Box {
+	let bellbird = App::new();
 	let editor_panel = gtk::Box::builder()
 		.orientation(gtk::Orientation::Vertical)
 		.margin_top(5)
@@ -123,7 +127,7 @@ pub fn build_ui(editor: Rc<RefCell<Editor>>) -> gtk::Box {
 		.build();
 
 	let editor_panel_label = gtk::Label::builder()
-		.label("Bellbird Notes")
+		.label(bellbird.title)
 		.margin_top(5)
 		.margin_start(5)
 		.margin_bottom(5)

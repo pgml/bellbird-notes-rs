@@ -14,11 +14,40 @@ use crate::{
 	notes_list
 };
 
-const APP_ID: &str = "org.bellbird.notes";
+#[derive(Debug, Clone)]
+pub struct App {
+	pub id: String,
+	pub title: String,
+}
+
+impl App {
+	pub fn new() -> Self {
+		let mut id = String::new();
+		let mut title = String::new();
+
+		if cfg!(feature = "stable") {
+			id = String::from("org.bellbird.notes");
+			title = String::from("Bellbird Notes");
+		}
+
+		if cfg!(feature = "snapshot") {
+			id = String::from("org.bellbird.notes-snapshot");
+			title = String::from("Bellbird Notes Snapshot");
+		}
+
+		println!("{id}, {title}");
+		Self {
+			id,
+			title
+		}
+	}
+}
+
 
 pub fn run() -> glib::ExitCode {
 	// Create a new application
-	let app = adw::Application::builder().application_id(APP_ID).build();
+	let bellbird = App::new();
+	let app = adw::Application::builder().application_id(bellbird.id).build();
 	// Connect to "activate" signal of `app`
 	app.connect_startup(|_| load_css());
 	app.connect_activate(build_ui);
@@ -37,10 +66,10 @@ fn build_ui(app: &adw::Application) {
 		.build();
 
 	//let headerbar = gtk::HeaderBar::new();
-	// Create a window
+	let bellbird = App::new();
 	let window = ApplicationWindow::builder()
 		.application(app)
-		.title("Bellbird Notes")
+		.title(bellbird.title)
 		.default_width(1000)
 		.default_height(600)
 		//.titlebar(&headerbar)
@@ -65,6 +94,7 @@ fn build_ui(app: &adw::Application) {
 	panels_wrapper.append(&editor_view::build_ui(editor));
 
 	window_box.append(&panels_wrapper);
+
 
 	// Present window
 	window.present();
