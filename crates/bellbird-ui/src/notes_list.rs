@@ -38,7 +38,7 @@ impl NotesList {
 		// A sorter used to sort AppInfo in the model by their name
 		let sorter = gtk::CustomSorter::new(move |obj1, obj2| {
 			let app_info1 = obj1.downcast_ref::<gtk::Label>().unwrap();
-			let app_info2 = obj2.downcast_ref::<gtk::Label>().unwrap();
+			let _app_info2 = obj2.downcast_ref::<gtk::Label>().unwrap();
 
 			app_info1
 				.label()

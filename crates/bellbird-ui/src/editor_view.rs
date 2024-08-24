@@ -1,10 +1,9 @@
 use std::{cell::RefCell, rc::Rc};
 
 use bellbird_core::notes::Notes;
-use gtk::{gio, glib::{self, source}, prelude::*, subclass::im_context};
+use gtk::{gio, glib::{self}, prelude::*};
 use sourceview5::{
 	self,
-	ffi::GtkSourceVimIMContext,
 	Buffer,
 	View,
 	prelude::ViewExt

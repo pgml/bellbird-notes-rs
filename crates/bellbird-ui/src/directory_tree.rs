@@ -10,10 +10,7 @@ fn append_item_to_model(model: &gio::ListStore, path: &str) {
 	match Directories::list(path, true) {
 		Ok(directories) => {
 			directories.iter().for_each(|directory| {
-				let mut dir_name = directory.name.clone();
-				//if directory.children.len() > 0 {
-				//	dir_name = format!("+ {dir_name}");
-				//}
+				let dir_name = directory.name.clone();
 
 				let label = gtk::Label::builder()
 					.label(&dir_name)
@@ -52,7 +49,7 @@ fn create_tree_view() -> gtk::ListView {
 	// A sorter used to sort AppInfo in the model by their name
 	let sorter = gtk::CustomSorter::new(move |obj1, obj2| {
 		let app_info1 = obj1.downcast_ref::<gtk::Label>().unwrap();
-		let app_info2 = obj2.downcast_ref::<gtk::Label>().unwrap();
+		let _app_info2 = obj2.downcast_ref::<gtk::Label>().unwrap();
 
 		app_info1
 			.label()
