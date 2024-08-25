@@ -1,5 +1,7 @@
-use std::{fs, path::Path};
+use std::{ffi::OsString, fs, path::{Path, PathBuf}};
 use anyhow::Result;
+
+use crate::config::{Config, ConfigOptions, ConfigSections};
 
 #[derive(Debug)]
 pub struct Note {
@@ -17,8 +19,8 @@ pub struct Note {
 #[derive(Debug)]
 pub struct Notes;
 
-impl Notes {
-	pub fn list(path: &str) -> Result<Vec<Note>> {
+impl<'a> Notes {
+	pub fn list(path: &Path) -> Result<Vec<Note>> {
 		let mut notes = Vec::new();
 
 		if !Path::new(path).exists() {
@@ -52,11 +54,20 @@ impl Notes {
 		Ok(notes.into())
 	}
 
-	pub fn write_to_file(path: String, content: String) -> bool {
+	pub fn write_to_file(path: &Path, content: String) -> bool {
 		match fs::write(path, content) {
 			Ok(_) => true,
 			Err(_e) => false,
 		}
 	}
-}
 
+	pub fn current_note_path() -> PathBuf {
+		let config = Config::new();
+		let mut value = config.value(
+			"General",
+			"CurrentNote"
+		);
+		value = value.replace("file://", "");
+		PathBuf::from(value)
+	}
+}

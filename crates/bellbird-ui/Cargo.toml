@@ -15,7 +15,7 @@ gtk = { version = "0.9.0", package = "gtk4", features = ["v4_12"] }
 sourceview5 = "0.9.0"
 
 [features]
-stable = []
-snapshot = []
+stable = ["bellbird-core/stable"]
+snapshot = ["bellbird-core/snapshot"]
 
 default = ["snapshot"]

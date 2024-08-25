@@ -4,6 +4,11 @@ window {
 	color: #222;
 }
 
+headerbar {
+	background-color: #f0f0f0;
+	box-shadow: 0;
+}
+
 .directories-panel > label {
 	text-transform: uppercase;
 	font-weight: 700;

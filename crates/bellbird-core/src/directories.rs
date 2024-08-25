@@ -1,4 +1,4 @@
-use std::{fs, path::Path};
+use std::{fs, path::{Path, PathBuf}};
 use anyhow::Result;
 
 use directories::UserDirs;
@@ -9,7 +9,7 @@ const BELLBIRD_DEFAULT_DIR: &str = ".bellbird-notes-snapshot";
 #[derive(Debug, Clone)]
 pub struct Directory {
 	pub name: String,
-	pub path: String,
+	pub path: PathBuf,
 	pub children: Vec<Directory>,
 	//pub nbr_notes: usize,
 	//pub nbr_folders: usize,
@@ -20,24 +20,24 @@ pub struct Directory {
 pub struct Directories;
 
 impl Directories {
-	pub fn list(path: &str, recursive: bool) -> Result<Vec<Directory>> {
+	pub fn list(path: &Path, recursive: bool) -> Result<Vec<Directory>> {
 		let mut directories: Vec<Directory> = vec![];
 
-		if !Path::new(&path).is_dir() {
+		if !path.is_dir() {
 			return Ok(directories);
 		}
 
 		for directory in fs::read_dir(path)? {
 			let path_buf = directory.as_ref().unwrap().path();
 			let file_name = path_buf.file_name().unwrap().to_str().unwrap().to_string();
-			let path_str = path_buf.to_str().unwrap();
+			//let path_str = path_buf;
 
 			if path_buf.is_dir() {
 				directories.push(Directory {
 					name: file_name,
-					path: path_str.to_string(),
+					path: path_buf.clone(),
 					children: if recursive {
-						Self::list(path_str, true)?
+						Self::list(&path_buf, true)?
 					}
 					else {
 						vec![]
@@ -54,16 +54,18 @@ impl Directories {
 		Ok(directories)
 	}
 
-	pub fn root_directory() -> String {
-		format!("{}/{BELLBIRD_DEFAULT_DIR}", Self::home_directory())
+	pub fn root_directory() -> PathBuf {
+		let mut root_dir = PathBuf::from(Self::home_directory());
+		root_dir.push(BELLBIRD_DEFAULT_DIR);
+		root_dir
 	}
 
-	fn home_directory() -> String {
+	fn home_directory() -> PathBuf {
 		match UserDirs::new() {
 			Some(user_dirs) => {
-				user_dirs.home_dir().to_str().unwrap().to_string()
+				user_dirs.home_dir().to_path_buf()
 			},
-			_ => String::new()
+			_ => PathBuf::new()
 		}
 	}
 }

@@ -1,6 +1,11 @@
 use std::cell::RefCell;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
+use bellbird_core::{
+	config::Config,
+	notes::Notes
+};
 use gtk::gio::ActionEntry;
 use gtk::prelude::*;
 use gtk::{glib, ApplicationWindow};
@@ -14,40 +19,9 @@ use crate::{
 	notes_list
 };
 
-#[derive(Debug, Clone)]
-pub struct App {
-	pub id: String,
-	pub title: String,
-}
-
-impl App {
-	pub fn new() -> Self {
-		let mut id = String::new();
-		let mut title = String::new();
-
-		if cfg!(feature = "stable") {
-			id = String::from("org.bellbird.notes");
-			title = String::from("Bellbird Notes");
-		}
-
-		if cfg!(feature = "snapshot") {
-			id = String::from("org.bellbird.notes-snapshot");
-			title = String::from("Bellbird Notes Snapshot");
-		}
-
-		println!("{id}, {title}");
-		Self {
-			id,
-			title
-		}
-	}
-}
-
-
 pub fn run() -> glib::ExitCode {
-	// Create a new application
-	let bellbird = App::new();
-	let app = adw::Application::builder().application_id(bellbird.id).build();
+	let config = Config::new();
+	let app = adw::Application::builder().application_id(config.app_id()).build();
 	// Connect to "activate" signal of `app`
 	app.connect_startup(|_| load_css());
 	app.connect_activate(build_ui);
@@ -66,10 +40,10 @@ fn build_ui(app: &adw::Application) {
 		.build();
 
 	//let headerbar = gtk::HeaderBar::new();
-	let bellbird = App::new();
+	let config = Config::new();
 	let window = ApplicationWindow::builder()
 		.application(app)
-		.title(bellbird.title)
+		.title(config.app_name())
 		.default_width(1000)
 		.default_height(600)
 		//.titlebar(&headerbar)
@@ -78,13 +52,12 @@ fn build_ui(app: &adw::Application) {
 
 	//let path = "/home/rico/.bellbird-notes/Bands/Stay Puft/Texte/";
 	//let note_path = "/home2/pgml/Projekte/Godot/dear-guests/Characters/Scripts/Controller.cs";
-	let path = "";
-	let note_path = "";
+	let path = Path::new("");
+	let note_path = Notes::current_note_path();
 	let notes_list = Rc::new(RefCell::new(NotesList::new(path)));
-	notes_list.borrow_mut().update_path(path);
 
-	let editor = Rc::new(RefCell::new(Editor::new(note_path)));
-	editor.borrow_mut().update_path(note_path);
+	let editor = Rc::new(RefCell::new(Editor::new(&note_path)));
+	editor.borrow_mut().update_path(note_path.to_path_buf());
 
 	register_update_notes_action(&window, &notes_list);
 	register_open_note_action(&window, &editor);
@@ -94,7 +67,6 @@ fn build_ui(app: &adw::Application) {
 	panels_wrapper.append(&editor_view::build_ui(editor));
 
 	window_box.append(&panels_wrapper);
-
 
 	// Present window
 	window.present();
@@ -138,7 +110,7 @@ fn register_open_note_action(window: &ApplicationWindow, editor: &Rc<RefCell<Edi
 				.expect("Could not get Parameter")
 				.get::<String>()
 				.expect("The variant nees to be of type `String`");
-			editor_clone.borrow_mut().update_path(&path);
+			editor_clone.borrow_mut().update_path(path.into());
 		})
 		.build();
 

@@ -1,4 +1,8 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{
+	cell::RefCell,
+	path::{Path, PathBuf},
+	rc::Rc
+};
 
 use bellbird_core::{config::Config, notes::Notes};
 use gtk::{gio, glib::{self}, prelude::*};
@@ -9,19 +13,17 @@ use sourceview5::{
 	prelude::ViewExt
 };
 
-use crate::application::App;
-
 #[derive(Debug, Clone)]
 pub struct Editor {
-	pub path: String,
+	pub path: PathBuf,
 	//pub buffers: Vec<Buffer>,
 	pub buffer: Buffer,
 	//pub editor_view: gtk::TextView,
 	pub editor_view: View,
 }
 
-impl Editor	{
-	pub fn new(path: &str) -> Self {
+impl<'a> Editor	{
+	pub fn new(path: &'a Path) -> Self {
 		let buffer = sourceview5::Buffer::new(None);
 		// let editor_view = View::builder().build();
 
@@ -42,19 +44,19 @@ impl Editor	{
 		// editor_view.set_tab_width(4);
 
 		Self {
-			path: path.to_string(),
+			path: path.to_path_buf(),
 			buffer,
 			editor_view
 		}
 	}
 
-	pub fn add_buffer(&self, path: &str) -> sourceview5::Buffer {
+	pub fn add_buffer(&self, path: PathBuf) -> sourceview5::Buffer {
 		let buffer = sourceview5::Buffer::new(None);
 		//buffer.set_highlight_syntax(true);
-		let file = gio::File::for_path(&path);
+		let file = gio::File::for_path(path);
 		let file = sourceview5::File::builder().location(&file).build();
 		let loader = sourceview5::FileLoader::new(&buffer, &file);
-		let _path_clone = path.to_string();
+		//let _path_clone = path.to_string();
 
 		loader.load_async_with_callback(
 			glib::Priority::default(),
@@ -74,22 +76,24 @@ impl Editor	{
 		buffer
 	}
 
-	pub fn update_path(&mut self, path: &str) {
-		self.path = path.to_string();
-		let buffer = self.add_buffer(path);
+	pub fn update_path(&mut self, path: PathBuf) {
+		// @todo: all this cloning makes me sick...
+		// try to handle this with lifetimes
+		self.path = path.clone();
+		let buffer = self.add_buffer(path.clone());
 		self.editor_view.set_buffer(Some(&buffer));
 
 		// disable editor if no note is loaded to avoid
 		// writing into nothing
 		let controller = gtk::EventControllerKey::new();
-		if !self.path.is_empty() {
+		if self.path.exists() {
 			let buffer_clone = buffer.clone();
-			let path_clone = self.path.clone();
+			let path_clone = path.clone();
 			controller.connect_key_released(move |_, _keyval, _keycode, _state| {
 				let buffer_start = buffer_clone.start_iter();
 				let buffer_end = buffer_clone.end_iter();
 				Notes::write_to_file(
-					path_clone.to_string(),
+					&path_clone,
 					buffer_clone.text(&buffer_start, &buffer_end, false).to_string()
 				);
 			});
@@ -117,7 +121,7 @@ impl Editor	{
 }
 
 pub fn build_ui(editor: Rc<RefCell<Editor>>) -> gtk::Box {
-	let config = Config::new(App::version());
+	let config = Config::new();
 	let editor_panel = gtk::Box::builder()
 		.orientation(gtk::Orientation::Vertical)
 		.margin_top(5)
@@ -126,7 +130,7 @@ pub fn build_ui(editor: Rc<RefCell<Editor>>) -> gtk::Box {
 		.build();
 
 	let editor_panel_label = gtk::Label::builder()
-		.label(config.app_name)
+		.label(config.app_name())
 		.margin_top(5)
 		.margin_start(5)
 		.margin_bottom(5)

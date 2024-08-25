@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, path::{Path, PathBuf}, rc::Rc};
 
 use bellbird_core::notes::Notes;
 
@@ -11,13 +11,13 @@ use crate::notes_list_row::NotesListItem;
 
 #[derive(Debug, Clone)]
 pub struct NotesList {
-	pub path: String,
+	pub path: PathBuf,
 	pub model: gio::ListStore,
 	pub list_view: gtk::ListView,
 }
 
-impl NotesList {
-	pub fn new(path: &str) -> Self {
+impl<'a> NotesList {
+	pub fn new(path: &'a Path) -> Self {
 		let model = gio::ListStore::new::<gtk::Label>();
 		let model_clone = model.clone();
 
@@ -72,18 +72,19 @@ impl NotesList {
 		});
 
 		Self {
-			path: path.to_string(),
+			path: path.to_path_buf(),
 			model,
 			list_view
 		}
 	}
 
 	pub fn update_path(&mut self, path: &str) {
-		self.path = path.to_string();
+		let path_buf = PathBuf::from(path);
+		self.path = path_buf.clone();
 		self.model.remove_all();
 		// let path = "/home/rico/.bellbird-notes/Bands/Stay Puft/Texte/";
 
-		match Notes::list(path) {
+		match Notes::list(&path_buf) {
 			Ok(notes) => {
 				notes.iter().for_each(|note| {
 					let label = gtk::Label::builder()

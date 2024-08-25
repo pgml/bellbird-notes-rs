@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use bellbird_core::directories::Directories;
 
 use gtk::{
@@ -6,7 +8,7 @@ use gtk::{
 
 use crate::directory_tree_row::DirectoryTreeRow;
 
-fn append_item_to_model(model: &gio::ListStore, path: &str) {
+fn append_item_to_model(model: &gio::ListStore, path: &Path) {
 	match Directories::list(path, true) {
 		Ok(directories) => {
 			directories.iter().for_each(|directory| {
@@ -14,7 +16,7 @@ fn append_item_to_model(model: &gio::ListStore, path: &str) {
 
 				let label = gtk::Label::builder()
 					.label(&dir_name)
-					.name(&directory.path)
+					.name(&directory.path.display().to_string())
 					.build();
 
 				model.append(&label);
