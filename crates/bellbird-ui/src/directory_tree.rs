@@ -51,6 +51,10 @@ impl<'a> DirectoryTree {
 			.factory(&factory)
 			.vexpand(true)
 			.valign(gtk::Align::Fill)
+			.margin_top(5)
+			.margin_bottom(5)
+			.margin_start(5)
+			.margin_end(5)
 			.single_click_activate(true)
 			.build();
 
@@ -103,7 +107,6 @@ impl<'a> DirectoryTree {
 	}
 
 	fn view(&self) -> &gtk::ListView {
-		println!("view");
 		&self.list_view
 	}
 
@@ -112,14 +115,12 @@ impl<'a> DirectoryTree {
 	}
 
 	fn set_selection(&self) {
-		println!("{:?}", self.current_directory.borrow_mut().display().to_string());
 		let current_directory = self.current_directory.clone();
 		if let Some(selection_model) = self.list_view.model() {
 			for index in 0..selection_model.n_items() {
 				if let Some(item) = selection_model.item(index) {
 					let path = item.downcast::<gtk::Label>().unwrap().widget_name();
 					if path.to_string() == current_directory.borrow_mut().display().to_string() {
-						println!("found {}", path);
 						selection_model.select_item(index, true);
 						break;
 					}
@@ -137,7 +138,6 @@ pub fn build_ui(directory_tree: Rc<RefCell<DirectoryTree>>) -> gtk::Box {
 		.width_request(200)
 		.margin_top(5)
 		.margin_bottom(5)
-		.margin_start(5)
 		.css_classes(["directories-panel"])
 		.build();
 
@@ -153,6 +153,13 @@ pub fn build_ui(directory_tree: Rc<RefCell<DirectoryTree>>) -> gtk::Box {
 		.child(directory_tree.borrow_mut().view())
 		.build();
 
+	let handle_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+	handle_box.append(&gtk::WindowControls::new(gtk::PackType::Start));
+	let _window_handle = gtk::WindowHandle::builder()
+		.child(&handle_box)
+		.build();
+
+	//directory_panel.append(&_window_handle);
 	directory_panel.append(&directory_panel_label);
 	directory_panel.append(&scrollable_window);
 

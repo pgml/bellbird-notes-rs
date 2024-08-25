@@ -141,6 +141,13 @@ pub fn build_ui(editor: Rc<RefCell<Editor>>) -> gtk::Box {
 		.child(editor.borrow_mut().view())
 		.build();
 
+	let handle_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+	handle_box.append(&gtk::WindowControls::new(gtk::PackType::End));
+	let _window_handle = gtk::WindowHandle::builder()
+		.child(&handle_box)
+		.build();
+
+	//editor_panel.append(&_window_handle);
 	editor_panel.append(&editor_panel_label);
 	editor_panel.append(&scrollable_window);
 

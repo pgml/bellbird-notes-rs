@@ -39,14 +39,13 @@ fn build_ui(app: &adw::Application) {
 		.spacing(5)
 		.build();
 
-	//let headerbar = gtk::HeaderBar::new();
 	let config = Config::new();
 	let window = ApplicationWindow::builder()
 		.application(app)
+		//.titlebar(&gtk::Box::new(gtk::Orientation::Horizontal, 0))
 		.title(config.app_name())
 		.default_width(1000)
 		.default_height(600)
-		//.titlebar(&headerbar)
 		.child(&window_box)
 		.build();
 

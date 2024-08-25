@@ -47,9 +47,9 @@ impl<'a> NotesList {
 			.vexpand(true)
 			.valign(gtk::Align::Fill)
 			.margin_top(5)
-			.margin_end(5)
 			.margin_bottom(5)
 			.margin_start(5)
+			.margin_end(5)
 			.single_click_activate(true)
 			.show_separators(true)
 			.build();
@@ -105,14 +105,12 @@ impl<'a> NotesList {
 	}
 
 	fn set_selection(&self) {
-		println!("{:?}", self.current_note.borrow_mut().display().to_string());
 		let current_note = self.current_note.clone();
 		if let Some(selection_model) = self.list_view.model() {
 			for index in 0..selection_model.n_items() {
 				if let Some(item) = selection_model.item(index) {
 					let path = item.downcast::<gtk::Label>().unwrap().widget_name();
 					if path.to_string() == current_note.borrow_mut().display().to_string() {
-						println!("found {}", path);
 						selection_model.select_item(index, true);
 						break;
 					}
@@ -131,8 +129,6 @@ pub fn build_ui(notes_list: Rc<RefCell<NotesList>>) -> gtk::Box {
 		.valign(gtk::Align::Fill)
 		.width_request(200)
 		.margin_top(5)
-		.margin_top(5)
-		.margin_bottom(5)
 		.margin_bottom(5)
 		.css_classes(["notes-panel"])
 		.build();

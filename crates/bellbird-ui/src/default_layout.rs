@@ -2,11 +2,16 @@ pub const DEFAULT_STYLE: &str = "
 window {
 	background-color: #F0F0F0;
 	color: #222;
+	border-top: 1px solid #DBDBDB;
 }
 
 headerbar {
 	background-color: #f0f0f0;
 	box-shadow: 0;
+}
+
+.directories-panel {
+	/* border-right: 1px solid #DBDBDB; */
 }
 
 .directories-panel > label {
@@ -26,6 +31,7 @@ headerbar {
 .notes-panel {
 	border-radius: 4px;
 	background-color: #fff;
+	/* border-right: 1px solid #DBDBDB; */
 }
 
 .notes-panel > label {
