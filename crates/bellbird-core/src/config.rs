@@ -136,32 +136,24 @@ impl<'a> Config {
 		//is_meta_info: bool,
 		//file: &str
 	) -> String {
-		let conf_file = self.config_file(false);
+		let config_file = self.config_file(false);
 
-		let is_file = fs::metadata(&conf_file)
+		let is_file = fs::metadata(&config_file)
 			.expect("Couldn't read...")
 			.is_file();
 
-		if !Path::new(&conf_file).exists() && !is_file {
+		if !Path::new(&config_file).exists() && !is_file {
 			return String::new();
 		}
 
 		let mut config = Ini::new_cs();
+		let mut config_value = String::new();
 
-		match config.load(&conf_file) {
-			Ok(_) => {
-				return match config.get(
-					section,
-					option,
-				) {
-					Some(value) => value.to_string(),
-					None => "".to_string(),
-				};
-			},
-			Err(_) => {
-				println!("nope");
-				String::new()
+		if let Ok(_) = config.load(&config_file) {
+			if let Some(value) = config.get(section, option) {
+				config_value = value.to_string();
 			}
 		}
+		config_value
 	}
 }

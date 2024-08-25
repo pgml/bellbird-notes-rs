@@ -9,22 +9,19 @@ use gtk::{
 use crate::directory_tree_row::DirectoryTreeRow;
 
 fn append_item_to_model(model: &gio::ListStore, path: &Path) {
-	match Directories::list(path, true) {
-		Ok(directories) => {
-			directories.iter().for_each(|directory| {
-				let dir_name = directory.name.clone();
+	if let Ok(directories) =  Directories::list(path, true) {
+		directories.iter().for_each(|directory| {
+			let dir_name = directory.name.clone();
 
-				let label = gtk::Label::builder()
-					.label(&dir_name)
-					.name(&directory.path.display().to_string())
-					.build();
+			let label = gtk::Label::builder()
+				.label(&dir_name)
+				.name(&directory.path.display().to_string())
+				.build();
 
-				model.append(&label);
-				//append_item_to_model(model, &directory.path);
-			})
-		},
-		_ => println!("No directories found")
-	};
+			model.append(&label);
+			//append_item_to_model(model, &directory.path);
+		})
+	}
 }
 
 fn create_tree_view() -> gtk::ListView {

@@ -27,27 +27,24 @@ impl<'a> Notes {
 			return Ok(notes);
 		}
 
-		match fs::read_dir(path) {
-			Ok(paths) => {
-				for path in paths {
-					let dir_entry = path?;
+		if let Ok(paths) = fs::read_dir(path) {
+			for path in paths {
+				let dir_entry = path?;
 
-					if dir_entry.path().is_dir() {
-						continue
-					}
-
-					let file_path = dir_entry.path().display().to_string();
-					let mut file_name = dir_entry.file_name();
-
-					file_name = Path::new(&file_name).with_extension("").into();
-
-					notes.push(Note {
-						name: file_name.to_str().unwrap().to_string(),
-						path: file_path.clone(),
-					});
+				if dir_entry.path().is_dir() {
+					continue
 				}
-			},
-			Err(_e) => return Ok(vec![]),
+
+				let file_path = dir_entry.path().display().to_string();
+				let mut file_name = dir_entry.file_name();
+
+				file_name = Path::new(&file_name).with_extension("").into();
+
+				notes.push(Note {
+					name: file_name.to_str().unwrap().to_string(),
+					path: file_path.clone(),
+				});
+			}
 		}
 
 		notes.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
@@ -57,7 +54,7 @@ impl<'a> Notes {
 	pub fn write_to_file(path: &Path, content: String) -> bool {
 		match fs::write(path, content) {
 			Ok(_) => true,
-			Err(_e) => false,
+			Err(_) => false,
 		}
 	}
 

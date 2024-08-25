@@ -82,22 +82,18 @@ impl<'a> NotesList {
 		let path_buf = PathBuf::from(path);
 		self.path = path_buf.clone();
 		self.model.remove_all();
-		// let path = "/home/rico/.bellbird-notes/Bands/Stay Puft/Texte/";
 
-		match Notes::list(&path_buf) {
-			Ok(notes) => {
-				notes.iter().for_each(|note| {
-					let label = gtk::Label::builder()
-						.label(&note.name)
-						.name(&note.path)
-						.build();
+		if let Ok(notes) =  Notes::list(&path_buf) {
+			notes.iter().for_each(|note| {
+				let label = gtk::Label::builder()
+					.label(&note.name)
+					.name(&note.path)
+					.build();
 
-					// println!("{:?}", label);
-					self.model.append(&label)
-				})
-			},
-			_ => println!("No Notes found")
-		};
+				// println!("{:?}", label);
+				self.model.append(&label)
+			})
+		}
 	}
 
 	pub fn view(&self) -> &gtk::ListView {

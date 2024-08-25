@@ -1,4 +1,4 @@
-use std::{fs, path::{Path, PathBuf}};
+use std::{env::home_dir, fs, path::{Path, PathBuf}};
 use anyhow::Result;
 
 use directories::UserDirs;
