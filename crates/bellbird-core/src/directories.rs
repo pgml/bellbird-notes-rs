@@ -3,6 +3,8 @@ use anyhow::Result;
 
 use directories::UserDirs;
 
+use crate::config::{Config, ConfigOptions, ConfigSections};
+
 // temporary
 const BELLBIRD_DEFAULT_DIR: &str = ".bellbird-notes-snapshot";
 
@@ -67,6 +69,15 @@ impl Directories {
 			},
 			_ => PathBuf::new()
 		}
+	}
+
+	pub fn current_directory_path() -> PathBuf {
+		let config = Config::new();
+		let value = config.value(
+			ConfigSections::General,
+			ConfigOptions::CurrentDirectory
+		);
+		PathBuf::from(value)
 	}
 }
 

@@ -36,11 +36,11 @@ headerbar {
 
 .notes-panel row {
 	border-radius: 4px;
-	border-bottom: 1px solid #eee;
+	border-bottom-color: #eee;
 }
 
 .notes-panel row:last-child {
-	border-bottom: 0;
+	border-bottom-color: transparent;
 }
 
 .editor-panel {

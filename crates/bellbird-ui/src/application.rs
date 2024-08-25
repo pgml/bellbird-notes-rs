@@ -1,7 +1,7 @@
 use std::cell::RefCell;
-use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
+use bellbird_core::directories::Directories;
 use bellbird_core::{
 	config::Config,
 	notes::Notes
@@ -50,11 +50,10 @@ fn build_ui(app: &adw::Application) {
 		.child(&window_box)
 		.build();
 
-	//let path = "/home/rico/.bellbird-notes/Bands/Stay Puft/Texte/";
-	//let note_path = "/home2/pgml/Projekte/Godot/dear-guests/Characters/Scripts/Controller.cs";
-	let path = Path::new("");
+	let path = Directories::current_directory_path();
 	let note_path = Notes::current_note_path();
-	let notes_list = Rc::new(RefCell::new(NotesList::new(path)));
+	let notes_list = Rc::new(RefCell::new(NotesList::new(&path)));
+	notes_list.borrow_mut().update_path(path.to_path_buf());
 
 	let editor = Rc::new(RefCell::new(Editor::new(&note_path)));
 	editor.borrow_mut().update_path(note_path.to_path_buf());
@@ -94,7 +93,8 @@ fn register_update_notes_action(window: &ApplicationWindow, notes_list: &Rc<RefC
 				.expect("Could not get Parameter")
 				.get::<String>()
 				.expect("The variant nees to be of type `String`");
-			notes_list_clone.borrow_mut().update_path(&path);
+			let path_buf = std::path::PathBuf::from(path.clone());
+			notes_list_clone.borrow_mut().update_path(path_buf);
 		})
 		.build();
 

@@ -5,13 +5,15 @@ use gtk::{
 		self,
 		subclass::Signal,
 	},
-	prelude::ObjectExt,
+	//prelude::ObjectExt,
 	subclass::prelude::*
 };
 
 #[derive(Debug, Default, gtk::CompositeTemplate)]
 #[template(file = "../../data/ui/notes_list_row.ui")]
 pub struct NotesListItem {
+	//#[template_child]
+	//pub icon: TemplateChild<gtk::gdk_pixbuf::Pixbuf>,
 	#[template_child]
 	pub name: TemplateChild<gtk::Label>,
 	#[template_child]
@@ -46,50 +48,53 @@ impl ObjectImpl for NotesListItem {
 		})
 	}
 
-	// fn properties() -> &'static [glib::ParamSpec] {
-	// 	static PROPERTIES: OnceLock<Vec<glib::ParamSpec>> = OnceLock::new();
-	// 	PROPERTIES.get_or_init(|| {
-	// 		vec![
-	// 			glib::ParamSpecString::builder("name").default_value("Name").build(),
-	// 			glib::ParamSpecString::builder("path").default_value("Path").build(),
-	// 		]
-	// 	})
-	// }
+	//fn properties() -> &'static [glib::ParamSpec] {
+	//	static PROPERTIES: OnceLock<Vec<glib::ParamSpec>> = OnceLock::new();
+	//	PROPERTIES.get_or_init(|| {
+	//		vec![
+	//			glib::ParamSpecObject::builder("icon").build(),
+	//			glib::ParamSpecString::builder("name").default_value("Name").build(),
+	//			glib::ParamSpecString::builder("path").default_value("Path").build(),
+	//		]
+	//	})
+	//}
 
-	// fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-	// 	// let obj = self.obj();
+	//fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
+	//	// let obj = self.obj();
 
-	// 	match pspec.name() {
-	// 		"name" => {
-	// 			let name: Option<String> = value.get().expect("Type mismatch");
-	// 			if let Some(name) = name {
-	// 				self.name.set_text(&name);
-	// 			}
-	// 		},
-	// 		"path" => {
-	// 			let path: Option<String> = value.get().expect("Type mismatch");
-	// 			if let Some(path) = path {
-	// 				self.path.set_text(&path);
-	// 			}
-	// 		}
-	// 		_ => unimplemented!(),
-	// 	}
-	// }
+	//	match pspec.name() {
+	//		"icon" => {
+	//			let icon: Option<String> = value.get().expect("Type mismatch");
+	//			if let Some(icon) = icon {
+	//				self.name.set_text(&icon);
+	//			}
+	//		},
+	//		"name" => {
+	//			let name: Option<String> = value.get().expect("Type mismatch");
+	//			if let Some(name) = name {
+	//				self.name.set_text(&name);
+	//			}
+	//		},
+	//		"path" => {
+	//			let path: Option<String> = value.get().expect("Type mismatch");
+	//			if let Some(path) = path {
+	//				self.path.set_text(&path);
+	//			}
+	//		}
+	//		_ => unimplemented!(),
+	//	}
+	//}
 
-	// fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-	// 	match pspec.name() {
-	// 		"name" => self.name.text().to_value(),
-	// 		"path" => self.path.text().to_value(),
-	// 		_ => unimplemented!(),
-	// 	}
-	// }
+	//fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+	//	match pspec.name() {
+	//		"icon" => self.icon.Box::pin
+	//		"name" => self.name.text().to_value(),
+	//		"path" => self.path.text().to_value(),
+	//		_ => unimplemented!(),
+	//	}
+	//}
 }
 
 impl BoxImpl for NotesListItem {}
 impl WidgetImpl for NotesListItem {}
-
-impl NotesListItem {
-	pub fn emit_activate(&self) {
-		self.obj().emit_by_name::<()>("activated", &[]);
-	}
-}
+impl NotesListItem {}

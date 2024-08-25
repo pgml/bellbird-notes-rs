@@ -50,6 +50,7 @@ impl<'a> NotesList {
 		let selection_model = gtk::SingleSelection::new(Some(sorted_model));
 		selection_model.set_autoselect(false);
 
+		//let list_view = gtk::ListView::builder()
 		let list_view = gtk::ListView::builder()
 			.model(&selection_model)
 			.factory(&factory)
@@ -60,6 +61,7 @@ impl<'a> NotesList {
 			.margin_bottom(5)
 			.margin_start(5)
 			.single_click_activate(true)
+			.show_separators(true)
 			.build();
 
 		list_view.connect_activate(move |list_view, position| {
@@ -78,12 +80,11 @@ impl<'a> NotesList {
 		}
 	}
 
-	pub fn update_path(&mut self, path: &str) {
-		let path_buf = PathBuf::from(path);
-		self.path = path_buf.clone();
+	pub fn update_path(&mut self, path: PathBuf) {
+		self.path = path.clone();
 		self.model.remove_all();
 
-		if let Ok(notes) =  Notes::list(&path_buf) {
+		if let Ok(notes) =  Notes::list(&path) {
 			notes.iter().for_each(|note| {
 				let label = gtk::Label::builder()
 					.label(&note.name)
