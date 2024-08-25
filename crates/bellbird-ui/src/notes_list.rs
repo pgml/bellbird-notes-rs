@@ -1,10 +1,11 @@
-use std::{cell::RefCell, path::{Path, PathBuf}, rc::Rc};
+use std::cell::RefCell;
+use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
 use bellbird_core::notes::Notes;
 
 use gtk::{
-	gio,
-	prelude::*
+	gio, prelude::*
 };
 
 use crate::notes_list_row::NotesListItem;
@@ -14,6 +15,7 @@ pub struct NotesList {
 	pub path: PathBuf,
 	pub model: gio::ListStore,
 	pub list_view: gtk::ListView,
+	pub current_note: Rc<RefCell<PathBuf>>,
 }
 
 impl<'a> NotesList {
@@ -32,23 +34,11 @@ impl<'a> NotesList {
 			let item = item.downcast_ref::<gtk::ListItem>().unwrap();
 			let label = item.item().and_downcast::<gtk::Label>().unwrap();
 			let child = item.child().and_downcast::<NotesListItem>().unwrap();
+			item.set_selectable(false);
 			child.append_tree_item(&label);
 		});
 
-		// A sorter used to sort AppInfo in the model by their name
-		let sorter = gtk::CustomSorter::new(move |obj1, obj2| {
-			let app_info1 = obj1.downcast_ref::<gtk::Label>().unwrap();
-			let _app_info2 = obj2.downcast_ref::<gtk::Label>().unwrap();
-
-			app_info1
-				.label()
-				.to_lowercase()
-				.cmp(&app_info1.label().to_lowercase())
-				.into()
-		});
-		let sorted_model = gtk::SortListModel::new(Some(model_clone), Some(sorter));
-		let selection_model = gtk::SingleSelection::new(Some(sorted_model));
-		selection_model.set_autoselect(false);
+		let selection_model = gtk::MultiSelection::new(Some(model_clone));
 
 		//let list_view = gtk::ListView::builder()
 		let list_view = gtk::ListView::builder()
@@ -64,10 +54,16 @@ impl<'a> NotesList {
 			.show_separators(true)
 			.build();
 
+		let current_note = Rc::new(RefCell::new(path.to_path_buf()));
+		//let current_note_clone = current_note.clone();
 		list_view.connect_activate(move |list_view, position| {
 			let model = list_view.model().unwrap();
-			let tree_item = model.item(position).and_downcast::<gtk::Label>().unwrap();
-			let path = tree_item.widget_name();
+			let label = model.item(position).and_downcast::<gtk::Label>().unwrap();
+			let path = label.widget_name();
+			model.select_item(position, true);
+
+			Notes::set_current_note_path(&PathBuf::from(path.clone()));
+
 			list_view
 				.activate_action("win.open-note", Some(&path.to_variant()))
 				.expect("The action `open-note` does not exist.");
@@ -76,7 +72,8 @@ impl<'a> NotesList {
 		Self {
 			path: path.to_path_buf(),
 			model,
-			list_view
+			list_view,
+			current_note,
 		}
 	}
 
@@ -95,10 +92,33 @@ impl<'a> NotesList {
 				self.model.append(&label)
 			})
 		}
+
+		self.set_selection();
 	}
 
-	pub fn view(&self) -> &gtk::ListView {
+	pub fn update_current_note(&self, path: PathBuf) {
+		self.current_note.borrow_mut().set_file_name(path);
+	}
+
+	fn view(&self) -> &gtk::ListView {
 		&self.list_view
+	}
+
+	fn set_selection(&self) {
+		println!("{:?}", self.current_note.borrow_mut().display().to_string());
+		let current_note = self.current_note.clone();
+		if let Some(selection_model) = self.list_view.model() {
+			for index in 0..selection_model.n_items() {
+				if let Some(item) = selection_model.item(index) {
+					let path = item.downcast::<gtk::Label>().unwrap().widget_name();
+					if path.to_string() == current_note.borrow_mut().display().to_string() {
+						println!("found {}", path);
+						selection_model.select_item(index, true);
+						break;
+					}
+				}
+			}
+		}
 	}
 }
 

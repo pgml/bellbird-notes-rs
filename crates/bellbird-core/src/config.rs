@@ -1,4 +1,5 @@
-use std::{ fs, path::{Path, PathBuf} };
+use std::fs;
+use std::path::{Path, PathBuf};
 
 use configparser::ini::Ini;
 use ::directories::BaseDirs;
@@ -50,6 +51,7 @@ impl ConfigOptions {
 	}
 }
 
+#[derive(Debug, Clone)]
 pub struct Config;
 
 impl<'a> Config {
@@ -153,5 +155,34 @@ impl<'a> Config {
 			}
 		}
 		config_value
+	}
+
+	pub fn set_value(
+		&self,
+		section: ConfigSections,
+		option: ConfigOptions,
+		value: String
+	) {
+		let mut config = Ini::new_cs();
+		let config_file = self.config_file(false);
+
+		match config.load(&config_file) {
+			Ok(_) => {
+				// read the existing config because it sometimes gets truncated
+				let outstring = config.writes();
+				let _ = config.read(outstring);
+				config.set(section.as_str(), option.as_str(), Some(value.clone()));
+				match config.write(&config_file) {
+					Ok(_) => true,
+					Err(e) => {
+						println!("{e}");
+						false
+					},
+				};
+			},
+			Err(e) => {
+				println!("{e}");
+			},
+		}
 	}
 }

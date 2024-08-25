@@ -2,14 +2,14 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use bellbird_core::directories::Directories;
-use bellbird_core::{
-	config::Config,
-	notes::Notes
-};
+use bellbird_core::config::Config;
+use bellbird_core::notes::Notes;
+
 use gtk::gio::ActionEntry;
 use gtk::prelude::*;
 use gtk::{glib, ApplicationWindow};
 
+use crate::directory_tree::DirectoryTree;
 use crate::editor_view::Editor;
 use crate::notes_list::NotesList;
 use crate::{
@@ -50,18 +50,26 @@ fn build_ui(app: &adw::Application) {
 		.child(&window_box)
 		.build();
 
+	let bellbird_root = Directories::root_directory();
 	let path = Directories::current_directory_path();
 	let note_path = Notes::current_note_path();
+
+	let directory_tree = Rc::new(RefCell::new(DirectoryTree::new(&bellbird_root)));
+	directory_tree.borrow_mut().update_current_directory(path.clone().into());
+	directory_tree.borrow_mut().update_path(bellbird_root.to_path_buf());
+
 	let notes_list = Rc::new(RefCell::new(NotesList::new(&path)));
+	notes_list.borrow_mut().update_current_note(note_path.clone().into());
 	notes_list.borrow_mut().update_path(path.to_path_buf());
 
 	let editor = Rc::new(RefCell::new(Editor::new(&note_path)));
+	//editor.borrow_mut().update_current_note(path.clone().into());
 	editor.borrow_mut().update_path(note_path.to_path_buf());
 
-	register_update_notes_action(&window, &notes_list);
-	register_open_note_action(&window, &editor);
+	register_update_notes_action(&window, &notes_list, &directory_tree);
+	register_open_note_action(&window, &editor, &notes_list);
 
-	panels_wrapper.append(&directory_tree::build_ui());
+	panels_wrapper.append(&directory_tree::build_ui(directory_tree));
 	panels_wrapper.append(&notes_list::build_ui(notes_list));
 	panels_wrapper.append(&editor_view::build_ui(editor));
 
@@ -84,8 +92,13 @@ fn load_css() {
 	);
 }
 
-fn register_update_notes_action(window: &ApplicationWindow, notes_list: &Rc<RefCell<NotesList>>) {
+fn register_update_notes_action(
+	window: &ApplicationWindow,
+	notes_list: &Rc<RefCell<NotesList>>,
+	directory_tree: &Rc<RefCell<DirectoryTree>>
+) {
 	let notes_list_clone = notes_list.clone();
+	let directory_tree_clone = directory_tree.clone();
 	let action_update_notes = ActionEntry::builder("update-notes")
 		.parameter_type(Some(&String::static_variant_type()))
 		.activate(move |_, _action, parameter| {
@@ -94,6 +107,7 @@ fn register_update_notes_action(window: &ApplicationWindow, notes_list: &Rc<RefC
 				.get::<String>()
 				.expect("The variant nees to be of type `String`");
 			let path_buf = std::path::PathBuf::from(path.clone());
+			directory_tree_clone.borrow_mut().update_current_directory(path.clone().into());
 			notes_list_clone.borrow_mut().update_path(path_buf);
 		})
 		.build();
@@ -101,8 +115,13 @@ fn register_update_notes_action(window: &ApplicationWindow, notes_list: &Rc<RefC
 	window.add_action_entries([action_update_notes]);
 }
 
-fn register_open_note_action(window: &ApplicationWindow, editor: &Rc<RefCell<Editor>>) {
+fn register_open_note_action(
+	window: &ApplicationWindow,
+	editor: &Rc<RefCell<Editor>>,
+	notes_list: &Rc<RefCell<NotesList>>
+) {
 	let editor_clone = editor.clone();
+	let notes_list_clone = notes_list.clone();
 	let action_open_notes = ActionEntry::builder("open-note")
 		.parameter_type(Some(&String::static_variant_type()))
 		.activate(move |_, _action, parameter| {
@@ -110,6 +129,7 @@ fn register_open_note_action(window: &ApplicationWindow, editor: &Rc<RefCell<Edi
 				.expect("Could not get Parameter")
 				.get::<String>()
 				.expect("The variant nees to be of type `String`");
+			notes_list_clone.borrow_mut().update_current_note(path.clone().into());
 			editor_clone.borrow_mut().update_path(path.into());
 		})
 		.build();

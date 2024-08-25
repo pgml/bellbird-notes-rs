@@ -1,4 +1,5 @@
-use std::{env::home_dir, fs, path::{Path, PathBuf}};
+use std::fs;
+use std::path::{Path, PathBuf};
 use anyhow::Result;
 
 use directories::UserDirs;
@@ -78,6 +79,14 @@ impl Directories {
 			ConfigOptions::CurrentDirectory
 		);
 		PathBuf::from(value)
+	}
+
+	pub fn set_current_directory_path(path: &Path) {
+		Config::new().set_value(
+			ConfigSections::General,
+			ConfigOptions::CurrentDirectory,
+			path.display().to_string()
+		);
 	}
 }
 

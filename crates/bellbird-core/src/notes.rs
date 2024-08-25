@@ -1,4 +1,5 @@
-use std::{ffi::OsString, fs, path::{Path, PathBuf}};
+use std::fs;
+use std::path::{Path, PathBuf};
 use anyhow::Result;
 
 use crate::config::{Config, ConfigOptions, ConfigSections};
@@ -66,5 +67,13 @@ impl<'a> Notes {
 		);
 		value = value.replace("file://", "");
 		PathBuf::from(value)
+	}
+
+	pub fn set_current_note_path(path: &Path) {
+		Config::new().set_value(
+			ConfigSections::General,
+			ConfigOptions::CurrentNote,
+			path.display().to_string()
+		);
 	}
 }
