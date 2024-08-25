@@ -61,8 +61,8 @@ impl<'a> Notes {
 	pub fn current_note_path() -> PathBuf {
 		let config = Config::new();
 		let mut value = config.value(
-			"General",
-			"CurrentNote"
+			ConfigSections::General,
+			ConfigOptions::CurrentNote
 		);
 		value = value.replace("file://", "");
 		PathBuf::from(value)

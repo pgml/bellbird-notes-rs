@@ -1,6 +1,4 @@
-use std::{
-	ffi::{OsStr, OsString}, fs, path::{Path, PathBuf}
-};
+use std::{ fs, path::{Path, PathBuf} };
 
 use configparser::ini::Ini;
 use ::directories::BaseDirs;
@@ -14,14 +12,14 @@ pub enum ConfigSections {
 	Menu,
 }
 
-impl ToString for ConfigSections {
-	fn to_string(&self) -> String {
+impl ConfigSections {
+	fn as_str(&self) -> &str {
 		match self {
-			ConfigSections::General => self.to_string(),
-			ConfigSections::SideBar => self.to_string(),
-			ConfigSections::NotesList => self.to_string(),
-			ConfigSections::BreadCrumb => self.to_string(),
-			ConfigSections::Menu => self.to_string(),
+			ConfigSections::General => "General",
+			ConfigSections::SideBar => "SideBar",
+			ConfigSections::NotesList => "NotesList",
+			ConfigSections::BreadCrumb => "BreadCrumb",
+			ConfigSections::Menu => "Menu",
 		}
 	}
 }
@@ -37,17 +35,17 @@ pub enum ConfigOptions {
 	Width,
 }
 
-impl ToString for ConfigOptions {
-	fn to_string(&self) -> String {
+impl ConfigOptions {
+	fn as_str(&self) -> &str {
 		match self {
-			ConfigOptions::DefaultNotesDirectory => self.to_string(),
-			ConfigOptions::UserNotesDirectory => self.to_string(),
-			ConfigOptions::DefaultFontSize => self.to_string(),
-			ConfigOptions::CurrentDirectory => self.to_string(),
-			ConfigOptions::CurrentNote => self.to_string(),
-			ConfigOptions::OpenNotes => self.to_string(),
-			ConfigOptions::Visible => self.to_string(),
-			ConfigOptions::Width => self.to_string(),
+			ConfigOptions::DefaultNotesDirectory => "DefaultNotesDirectory",
+			ConfigOptions::UserNotesDirectory => "UserNotesDirectory",
+			ConfigOptions::DefaultFontSize => "DefaultFontSize",
+			ConfigOptions::CurrentDirectory => "CurrentDirectory",
+			ConfigOptions::CurrentNote => "CurrentNote",
+			ConfigOptions::OpenNotes => "OpenNotes",
+			ConfigOptions::Visible => "Visible",
+			ConfigOptions::Width => "Width",
 		}
 	}
 }
@@ -131,8 +129,8 @@ impl<'a> Config {
 
 	pub fn value(
 		&self,
-		section: &str,
-		option: &str,
+		section: ConfigSections,
+		option: ConfigOptions,
 		//is_meta_info: bool,
 		//file: &str
 	) -> String {
@@ -150,7 +148,7 @@ impl<'a> Config {
 		let mut config_value = String::new();
 
 		if let Ok(_) = config.load(&config_file) {
-			if let Some(value) = config.get(section, option) {
+			if let Some(value) = config.get(&section.as_str(), &option.as_str()) {
 				config_value = value.to_string();
 			}
 		}
