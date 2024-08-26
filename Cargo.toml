@@ -3,10 +3,6 @@ members = [
 	"crates/bellbird-ui",
 	"crates/bellbird-core"
 ]
-default-members = [
-	"crates/bellbird-ui"
-]
-
 resolver = "2"
 
 [workspace.package]

@@ -1,16 +1,16 @@
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use gtk::{gio, prelude::*};
+use gtk::prelude::WidgetExt;
 
 use bellbird_core::config::{
 	Config,
 	ConfigOptions,
 	ConfigSections
 };
+
 use bellbird_core::directories::Directories;
-
-use gtk::{gio, prelude::*};
-
 use crate::directory_tree_row::DirectoryTreeRow;
 
 #[derive(Debug, Clone)]
@@ -24,22 +24,35 @@ pub struct DirectoryTree {
 impl<'a> DirectoryTree {
 	pub fn new(path: &'a Path) -> Self {
 		let model = gio::ListStore::new::<gtk::Label>();
+		//let model = gio::ListStore::new::<TreeItem>();
 		let model_clone = model.clone();
 		let config = Config::new();
 
 	  let factory = gtk::SignalListItemFactory::new();
 		factory.connect_setup(move |_factory, item| {
 			let item = item.downcast_ref::<gtk::ListItem>().unwrap();
-			let row = DirectoryTreeRow::new();
+			let row = DirectoryTreeRow::default();
 			item.set_child(Some(&row));
 		});
 
 		factory.connect_bind(move |_factory, item| {
 			let item = item.downcast_ref::<gtk::ListItem>().unwrap();
+			item.set_selectable(false);
+
 			let label = item.item().and_downcast::<gtk::Label>().unwrap();
 			let child = item.child().and_downcast::<DirectoryTreeRow>().unwrap();
-			item.set_selectable(false);
-			child.append_tree_item(&label);
+			let dir_name = &label.label();
+			let path = PathBuf::from(label.widget_name());
+			let depth_from_root = Directories::get_depth_from_root(&path);
+
+			//println!("{}", Directories::dir_has_children(&path));
+			let has_children = Directories::dir_has_children(&path);
+			child.append_tree_item(
+				&dir_name,
+				&path,
+				depth_from_root,
+				has_children
+			);
 		});
 
 		let selection_model = gtk::MultiSelection::new(Some(model_clone));
@@ -84,22 +97,33 @@ impl<'a> DirectoryTree {
 	pub fn update_path(&mut self, path: PathBuf) {
 		self.path = path.clone();
 		self.model.remove_all();
+		self.append_to_model(&path);
+		self.set_selection();
+	}
 
+	fn append_to_model(&self, path: &Path) {
 		if let Ok(directories) = Directories::list(&path, true) {
 			directories.iter().for_each(|directory| {
 				let dir_name = directory.name.clone();
+				let path = directory.path.display().to_string();
+
+				//let tree_item = TreeItem::new();
+				//tree_item.set_name(Some(dir_name));
+				//tree_item.set_path(Some(path));
+				//self.model.append(&tree_item);
+
+				//let row = DirectoryTreeRow::new();
+				//row.set_name(Some(dir_name));
+				//row.set_path(Some(directory.path.display().to_string()));
 
 				let label = gtk::Label::builder()
 					.label(&dir_name)
-					.name(&directory.path.display().to_string())
+					.name(&path)
 					.build();
-
 				self.model.append(&label);
-				//append_item_to_model(model, &directory.path);
+				self.append_to_model(&directory.path);
 			})
 		}
-
-		self.set_selection();
 	}
 
 	fn view(&self) -> &gtk::ListView {
@@ -147,8 +171,6 @@ pub fn build_ui(directory_tree: Rc<RefCell<DirectoryTree>>) -> gtk::Box {
 	let scrollable_window = gtk::ScrolledWindow::builder()
 		.child(directory_tree.borrow_mut().view())
 		.hscrollbar_policy(gtk::PolicyType::External)
-		.margin_start(10)
-		.margin_end(10)
 		.build();
 
 	let handle_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);

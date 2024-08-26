@@ -1,9 +1,5 @@
-use gtk::{
-	glib::{
-		self,
-	},
-	subclass::prelude::*
-};
+use gtk::subclass::prelude::*;
+use gtk::glib;
 
 #[derive(Debug, Default, gtk::CompositeTemplate)]
 #[template(file = "../../data/ui/directory_tree_row.ui")]
@@ -33,60 +29,6 @@ impl ObjectSubclass for DirectoryTreeRow {
 	}
 }
 
-impl ObjectImpl for DirectoryTreeRow {
-	// fn signals() -> &'static [Signal] {
-	// 	static SIGNALS: OnceLock<Vec<Signal>> = OnceLock::new();
-	// 	SIGNALS.get_or_init(|| {
-	// 		vec![Signal::builder("activate")
-	// 			.build()]
-	// 	})
-	//}
-
-	//fn properties() -> &'static [glib::ParamSpec] {
-	//	static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-	//		// we can use it to represent Option<String>
-	//		vec![
-	//			glib::ParamSpecString::builder("name")
-	//				.default_value(None)
-	//				.build(),
-	//			glib::ParamSpecString::builder("path")
-	//				.default_value(None)
-	//				.build()
-	//		]
-	//	});
-	//	PROPERTIES.as_ref()
-	//}
-
-	//fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-	//	match pspec.name() {
-	//		"name" => self.name.to_value(),
-	//		"path" => self.path.to_value(),
-	//		_ => unimplemented!(),
-	//	}
-	//}
-
-	//fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-	//	match pspec.name() {
-	//		"name" => {
-	//			let name = value
-	//				.get::<Option<String>>()
-	//				.expect("The value needs to be of type `Option<String>`");
-
-	//			self.obj().set_name(name.clone());
-	//			// self.name.replace(name);
-	//		},
-	//		"path" => {
-	//			let path = value
-	//				.get::<Option<String>>()
-	//				.expect("The value needs to be of type `Option<String>`");
-
-	//			self.obj().set_path(path.clone());
-	//			// self.name.replace(name);
-	//		}
-	//		_ => unimplemented!(),
-	//	}
-	//}
-}
-
+impl ObjectImpl for DirectoryTreeRow { }
 impl BoxImpl for DirectoryTreeRow {}
 impl WidgetImpl for DirectoryTreeRow {}

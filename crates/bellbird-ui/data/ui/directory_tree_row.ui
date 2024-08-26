@@ -6,26 +6,30 @@
 		<property name="margin-bottom">3</property>
 		<child>
 			<object class="GtkTreeExpander" id="expander">
-				<property name="indent-for-icon">false</property>
+				<property name="indent-for-icon">true</property>
 				<property name="focusable">False</property>
-			</object>
-		</child>
-		<child>
-			<object class="GtkImage" id="icon">
-				<property name="pixel-size">14</property>
-				<property name="margin-start">6</property>
-				<property name="margin-end">1</property>
-			</object>
-		</child>
-		<child>
-			<object class="GtkLabel" id="name">
-				<property name="halign">start</property>
-				<property name="margin-start">5</property>
-			</object>
-		</child>
-		<child>
-			<object class="GtkLabel" id="path">
-				<property name="visible">false</property>
+				<property name="child">
+					<object class="GtkBox" id="row-content">
+						<child>
+							<object class="GtkImage" id="icon">
+								<property name="pixel-size">15</property>
+								<property name="margin-start">6</property>
+								<property name="margin-end">1</property>
+							</object>
+						</child>
+						<child>
+							<object class="GtkLabel" id="name">
+								<property name="halign">start</property>
+								<property name="margin-start">5</property>
+							</object>
+						</child>
+						<child>
+							<object class="GtkLabel" id="path">
+								<property name="visible">false</property>
+							</object>
+						</child>
+					</object>
+				</property>
 			</object>
 		</child>
 	</template>

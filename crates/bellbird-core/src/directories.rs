@@ -3,11 +3,9 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 
 use directories::UserDirs;
+use walkdir::WalkDir;
 
 use crate::config::{Config, ConfigOptions, ConfigSections};
-
-// temporary
-const BELLBIRD_DEFAULT_DIR: &str = ".bellbird-notes-snapshot";
 
 #[derive(Debug, Clone)]
 pub struct Directory {
@@ -59,7 +57,14 @@ impl Directories {
 
 	pub fn root_directory() -> PathBuf {
 		let mut root_dir = PathBuf::from(Self::home_directory());
-		root_dir.push(BELLBIRD_DEFAULT_DIR);
+
+		let config = Config::new();
+		let value = config.value(
+			ConfigSections::General,
+			ConfigOptions::UserNotesDirectory
+		);
+
+		root_dir.push(value);
 		root_dir
 	}
 
@@ -88,6 +93,26 @@ impl Directories {
 			path.display().to_string()
 		);
 	}
+
+	pub fn get_depth_from_root(path: &Path) -> u32 {
+		let root_dir = Self::root_directory();
+		for entry in WalkDir::new(root_dir).max_depth(20) {
+			if let Ok(dir) = entry {
+				if path == dir.path() {
+					return dir.depth() as u32;
+				}
+			}
+		}
+		0
+	}
+
+	pub fn dir_has_children(path: &Path) -> bool {
+		// @todo don't use Self::list
+		if let Ok(directory) = Self::list(path, true) {
+			for dir in directory {
+				return dir.children.len() > 0;
+			}
+		}
+		false
+	}
 }
-
-

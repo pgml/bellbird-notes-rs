@@ -143,8 +143,6 @@ pub fn build_ui(notes_list: Rc<RefCell<NotesList>>) -> gtk::Box {
 	let scrollable_window = gtk::ScrolledWindow::builder()
 		.child(notes_list.borrow_mut().view())
 		.hscrollbar_policy(gtk::PolicyType::External)
-		.margin_start(5)
-		.margin_end(5)
 		.build();
 
 	notes_panel.append(&notes_panel_label);

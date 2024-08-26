@@ -1,4 +1,6 @@
-mod imp;
+pub(crate) mod imp;
+
+use std::path::Path;
 
 use gtk::{glib, pango::EllipsizeMode, prelude::*, subclass::prelude::*};
 
@@ -7,57 +9,48 @@ glib::wrapper! {
 		@extends gtk::Widget, gtk::Box;
 }
 
-// impl Default for DirectoryTreeRow {
-// 	fn default() -> Self {
-// 		glib::Object::new()
-// 	}
-// }
+impl Default for DirectoryTreeRow {
+	fn default() -> Self {
+		Self::new()
+	}
+}
 
 impl DirectoryTreeRow {
-	pub fn new() -> Self {
+	pub(crate) fn new() -> Self {
 		glib::Object::new()
 	}
 
-	pub fn append_tree_item(&self, item_label: &gtk::Label) {
+	pub(crate) fn append_tree_item(
+		&self,
+		name: &str,
+		path: &Path,
+		depth_from_root: u32,
+		has_children: bool
+	) {
 		let imp = self.imp();
-		// println!("{:j?} {:?}, asdas", &item_label.text(), &item_label.text());
-		let expander = gtk::Image::builder()
+
+		let indent_size = 15;
+		let _expander = gtk::Image::builder()
 			.resource("/com/bellbird/notes/icons/arrow-right.svg")
 			.pixel_size(12)
 			.build();
 		//println!("{:?}", expander);
-		imp.expander.set_child(Some(&expander));
+		//imp.expander.set_child(Some(&expander));
+
+		let controller = gtk::GestureClick::new();
+		controller.connect_released(move |gesture, n_press, x, y| {
+			println!("{:?} {:?} {:?} {:?}", gesture, n_press, x, y);
+		});
+		imp.expander.add_controller(controller);
+		imp.expander.set_hide_expander(!has_children);
+		imp.expander.set_margin_start(depth_from_root as i32 * indent_size);
+
 		imp.icon.set_resource(Some("/com/bellbird/notes/icons/folder-closed.svg"));
-		imp.name.set_text(&item_label.label());
+
+		//imp.name.set_text(&self.name());
+		imp.name.set_text(name);
 		imp.name.set_ellipsize(EllipsizeMode::End);
-		imp.path.set_text(&item_label.widget_name())
-
-		// if let Some(desc) = app_info.description() {
-		// 	imp.description.set_text(&desc);
-		// }
-
-		// if let Some(icon) = app_info.icon() {
-		// 	imp.image.set_from_gicon(&icon);
-		// }
+		//imp.path.set_text(&self.path());
+		imp.path.set_text(&path.display().to_string());
 	}
-
-	//#[allow(unused)]
-	//pub(crate) fn name(&self) -> Option<String> {
-	//	self.property::<Option<String>>("name")
-	//}
-
-	//#[allow(unused)]
-	//pub(crate) fn set_name(&self, name: Option<String>) {
-	//	self.set_property("name", name.to_value());
-	//}
-
-	//#[allow(unused)]
-	//pub(crate) fn path(&self) -> Option<String> {
-	//	self.property::<Option<String>>("path")
-	//}
-
-	//#[allow(unused)]
-	//pub(crate) fn set_path(&self, path: Option<String>) {
-	//	self.set_property("path", path.to_value());
-	//}
 }

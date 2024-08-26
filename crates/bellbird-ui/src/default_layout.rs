@@ -22,6 +22,7 @@ headerbar {
 
 .directories-panel listview {
 	background-color: transparent;
+	padding: 0 10px;
 }
 
 .directories-panel row {
@@ -33,6 +34,10 @@ headerbar {
 	border-bottom-left-radius: 4px;
 	background-color: #fff;
 	/* border-right: 4px solid #f0f0f0; */
+}
+
+.notes-panel listview {
+	padding: 0 5px;
 }
 
 .notes-panel > label {
