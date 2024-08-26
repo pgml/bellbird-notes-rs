@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+    <gresource prefix="/com/bellbird/notes/">
+			<file>icons/arrow-right.svg</file>
+			<file>icons/folder-closed.svg</file>
+			<file>icons/note.svg</file>
+		</gresource>
+</gresources>

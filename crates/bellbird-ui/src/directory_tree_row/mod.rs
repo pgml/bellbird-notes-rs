@@ -1,6 +1,6 @@
 mod imp;
 
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, pango::EllipsizeMode, prelude::*, subclass::prelude::*};
 
 glib::wrapper! {
 	pub struct DirectoryTreeRow(ObjectSubclass<imp::DirectoryTreeRow>)
@@ -20,8 +20,16 @@ impl DirectoryTreeRow {
 
 	pub fn append_tree_item(&self, item_label: &gtk::Label) {
 		let imp = self.imp();
-		// println!("{:?} {:?}, asdas", &item_label.text(), &item_label.text());
+		// println!("{:j?} {:?}, asdas", &item_label.text(), &item_label.text());
+		let expander = gtk::Image::builder()
+			.resource("/com/bellbird/notes/icons/arrow-right.svg")
+			.pixel_size(12)
+			.build();
+		//println!("{:?}", expander);
+		imp.expander.set_child(Some(&expander));
+		imp.icon.set_resource(Some("/com/bellbird/notes/icons/folder-closed.svg"));
 		imp.name.set_text(&item_label.label());
+		imp.name.set_ellipsize(EllipsizeMode::End);
 		imp.path.set_text(&item_label.widget_name())
 
 		// if let Some(desc) = app_info.description() {

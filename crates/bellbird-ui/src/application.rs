@@ -1,27 +1,26 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use gtk::gio::ActionEntry;
+use gtk::prelude::*;
+use gtk::{glib::{self}, ApplicationWindow};
+
 use bellbird_core::directories::Directories;
 use bellbird_core::config::Config;
 use bellbird_core::notes::Notes;
 
-use gtk::gio::ActionEntry;
-use gtk::prelude::*;
-use gtk::{glib, ApplicationWindow};
-
 use crate::directory_tree::DirectoryTree;
 use crate::editor_view::Editor;
 use crate::notes_list::NotesList;
-use crate::{
-	default_layout,
-	directory_tree,
-	editor_view,
-	notes_list
-};
+use crate::directory_tree;
+use crate::notes_list;
+use crate::editor_view;
+use crate::default_layout;
 
 pub fn run() -> glib::ExitCode {
 	let config = Config::new();
 	let app = adw::Application::builder().application_id(config.app_id()).build();
+
 	// Connect to "activate" signal of `app`
 	app.connect_startup(|_| load_css());
 	app.connect_activate(build_ui);
@@ -36,7 +35,7 @@ fn build_ui(app: &adw::Application) {
 
 	let panels_wrapper = gtk::Box::builder()
 		.orientation(gtk::Orientation::Horizontal)
-		.spacing(5)
+		.spacing(0)
 		.build();
 
 	let config = Config::new();

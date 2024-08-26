@@ -12,16 +12,12 @@ use gtk::{
 #[derive(Debug, Default, gtk::CompositeTemplate)]
 #[template(file = "../../data/ui/notes_list_row.ui")]
 pub struct NotesListItem {
-	//#[template_child]
-	//pub icon: TemplateChild<gtk::gdk_pixbuf::Pixbuf>,
+	#[template_child]
+	pub icon: TemplateChild<gtk::Image>,
 	#[template_child]
 	pub name: TemplateChild<gtk::Label>,
 	#[template_child]
 	pub path: TemplateChild<gtk::Label>,
-	// #[template_child]
-	// pub description: TemplateChild<gtk::Label>,
-	// #[template_child]
-	// pub image: TemplateChild<gtk::Image>,
 }
 
 #[glib::object_subclass]

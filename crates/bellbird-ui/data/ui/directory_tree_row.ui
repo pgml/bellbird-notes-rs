@@ -2,13 +2,25 @@
 <interface>
 	<template class="DirectoryTreeRow" parent="GtkBox">
 		<property name="orientation">horizontal</property>
+		<property name="margin-top">3</property>
+		<property name="margin-bottom">3</property>
+		<child>
+			<object class="GtkTreeExpander" id="expander">
+				<property name="indent-for-icon">false</property>
+				<property name="focusable">False</property>
+			</object>
+		</child>
+		<child>
+			<object class="GtkImage" id="icon">
+				<property name="pixel-size">14</property>
+				<property name="margin-start">6</property>
+				<property name="margin-end">1</property>
+			</object>
+		</child>
 		<child>
 			<object class="GtkLabel" id="name">
 				<property name="halign">start</property>
-        <property name="margin-top">5</property>
-        <property name="margin-bottom">5</property>
-        <property name="margin-start">5</property>
-        <property name="margin-end">5</property>
+				<property name="margin-start">5</property>
 			</object>
 		</child>
 		<child>

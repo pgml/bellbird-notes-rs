@@ -9,9 +9,7 @@ use bellbird_core::config::{
 };
 use bellbird_core::directories::Directories;
 
-use gtk::{
-	gio, prelude::*
-};
+use gtk::{gio, prelude::*};
 
 use crate::directory_tree_row::DirectoryTreeRow;
 
@@ -53,8 +51,6 @@ impl<'a> DirectoryTree {
 			.valign(gtk::Align::Fill)
 			.margin_top(5)
 			.margin_bottom(5)
-			.margin_start(5)
-			.margin_end(5)
 			.single_click_activate(true)
 			.build();
 
@@ -135,22 +131,24 @@ pub fn build_ui(directory_tree: Rc<RefCell<DirectoryTree>>) -> gtk::Box {
 		.orientation(gtk::Orientation::Vertical)
 		.vexpand(true)
 		.valign(gtk::Align::Fill)
-		.width_request(200)
-		.margin_top(5)
-		.margin_bottom(5)
+		.width_request(190)
 		.css_classes(["directories-panel"])
 		.build();
 
 	let directory_panel_label = gtk::Label::builder()
 		.label("Directories")
+		.margin_start(10)
+		.margin_end(10)
 		.margin_top(5)
-		.margin_start(5)
 		.margin_bottom(5)
 		.halign(gtk::Align::Start)
 		.build();
 
 	let scrollable_window = gtk::ScrolledWindow::builder()
 		.child(directory_tree.borrow_mut().view())
+		.hscrollbar_policy(gtk::PolicyType::External)
+		.margin_start(10)
+		.margin_end(10)
 		.build();
 
 	let handle_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);

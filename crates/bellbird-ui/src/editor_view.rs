@@ -40,8 +40,8 @@ impl<'a> Editor	{
 		editor_view.set_wrap_mode(gtk::WrapMode::WordChar);
 		editor_view.set_highlight_current_line(true);
 		//editor_view.set_show_line_numbers(true);
-		// editor_view.set_monospace(true);
-		// editor_view.set_tab_width(4);
+		//editor_view.set_monospace(true);
+		//editor_view.set_tab_width(4);
 
 		Self {
 			path: path.to_path_buf(),
@@ -124,8 +124,7 @@ pub fn build_ui(editor: Rc<RefCell<Editor>>) -> gtk::Box {
 	let config = Config::new();
 	let editor_panel = gtk::Box::builder()
 		.orientation(gtk::Orientation::Vertical)
-		.margin_top(5)
-		.margin_bottom(5)
+		//.margin_end(5)
 		.css_classes(["editor-panel"])
 		.build();
 

@@ -48,8 +48,8 @@ impl<'a> NotesList {
 			.valign(gtk::Align::Fill)
 			.margin_top(5)
 			.margin_bottom(5)
-			.margin_start(5)
-			.margin_end(5)
+			//.margin_start(5)
+			//.margin_end(5)
 			.single_click_activate(true)
 			.show_separators(true)
 			.build();
@@ -121,22 +121,20 @@ impl<'a> NotesList {
 }
 
 pub fn build_ui(notes_list: Rc<RefCell<NotesList>>) -> gtk::Box {
-	// notes_list.update_path(path);
-
 	let notes_panel = gtk::Box::builder()
 		.orientation(gtk::Orientation::Vertical)
 		.vexpand(true)
 		.valign(gtk::Align::Fill)
-		.width_request(200)
-		.margin_top(5)
-		.margin_bottom(5)
+		.width_request(190)
+		.margin_end(4)
 		.css_classes(["notes-panel"])
 		.build();
 
 	let notes_panel_label = gtk::Label::builder()
 		.label("Notes")
+		.margin_start(10)
+		.margin_end(10)
 		.margin_top(5)
-		.margin_start(5)
 		.margin_bottom(5)
 		.halign(gtk::Align::Start)
 		.build();
@@ -144,6 +142,9 @@ pub fn build_ui(notes_list: Rc<RefCell<NotesList>>) -> gtk::Box {
 	// let notes_list = NotesList::new("");
 	let scrollable_window = gtk::ScrolledWindow::builder()
 		.child(notes_list.borrow_mut().view())
+		.hscrollbar_policy(gtk::PolicyType::External)
+		.margin_start(10)
+		.margin_end(10)
 		.build();
 
 	notes_panel.append(&notes_panel_label);
