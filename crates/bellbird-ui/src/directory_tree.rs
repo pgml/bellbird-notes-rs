@@ -136,7 +136,7 @@ pub fn build_ui(directory_tree: Rc<RefCell<DirectoryTree>>) -> gtk::Box {
 		.build();
 
 	let directory_panel_label = gtk::Label::builder()
-		.label("Directories")
+		.label("Folders")
 		.margin_start(10)
 		.margin_end(10)
 		.margin_top(5)

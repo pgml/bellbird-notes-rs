@@ -125,15 +125,15 @@ pub fn build_ui(notes_list: Rc<RefCell<NotesList>>) -> gtk::Box {
 		.orientation(gtk::Orientation::Vertical)
 		.vexpand(true)
 		.valign(gtk::Align::Fill)
-		.width_request(190)
+		.width_request(195)
 		.margin_end(4)
 		.css_classes(["notes-panel"])
 		.build();
 
 	let notes_panel_label = gtk::Label::builder()
 		.label("Notes")
-		.margin_start(10)
-		.margin_end(10)
+		.margin_start(5)
+		.margin_end(5)
 		.margin_top(5)
 		.margin_bottom(5)
 		.halign(gtk::Align::Start)
@@ -143,8 +143,8 @@ pub fn build_ui(notes_list: Rc<RefCell<NotesList>>) -> gtk::Box {
 	let scrollable_window = gtk::ScrolledWindow::builder()
 		.child(notes_list.borrow_mut().view())
 		.hscrollbar_policy(gtk::PolicyType::External)
-		.margin_start(10)
-		.margin_end(10)
+		.margin_start(5)
+		.margin_end(5)
 		.build();
 
 	notes_panel.append(&notes_panel_label);
