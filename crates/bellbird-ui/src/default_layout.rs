@@ -3,6 +3,10 @@ window {
 	background-color: #F0F0F0;
 	color: #222;
 	border-top: 1px solid #DBDBDB;
+	font-size: 13px;
+}
+
+window * {
 }
 
 windowcontrols button {
