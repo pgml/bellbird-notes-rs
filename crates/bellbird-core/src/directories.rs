@@ -1,5 +1,3 @@
-use std::ffi::OsString;
-use std::fs;
 use std::path::{Path, PathBuf};
 use anyhow::Result;
 
@@ -106,6 +104,11 @@ impl Directories {
 	}
 
 	pub fn dir_has_children(path: &Path) -> bool {
-		Self::list(path, 1).unwrap().len() > 0
+		if path.exists() {
+			Self::list(path, 1).unwrap().len() > 0
+		}
+		else {
+			false
+		}
 	}
 }

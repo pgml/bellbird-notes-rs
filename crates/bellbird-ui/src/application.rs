@@ -66,6 +66,7 @@ fn build_ui(app: &adw::Application) {
 
 	register_update_notes_action(&window, &notes_list, &directory_tree);
 	register_open_note_action(&window, &editor, &notes_list);
+	register_editor_key_up(&window, &editor);
 
 	panels_wrapper.append(&directory_tree::build_ui(directory_tree));
 	panels_wrapper.append(&notes_list::build_ui(notes_list));
@@ -133,4 +134,19 @@ fn register_open_note_action(
 		.build();
 
 	window.add_action_entries([action_open_notes]);
+}
+
+fn register_editor_key_up(
+	window: &ApplicationWindow,
+	editor: &Rc<RefCell<Editor>>
+) {
+	let editor_clone = editor.clone();
+	let action_editor_key_up = ActionEntry::builder("editor-key-up")
+		.parameter_type(Some(&String::static_variant_type()))
+		.activate(move |_, _, _| {
+			editor_clone.borrow_mut().write_note();
+		})
+		.build();
+
+	window.add_action_entries([action_editor_key_up]);
 }

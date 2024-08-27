@@ -21,12 +21,12 @@ pub struct Editor {
 	pub editor_breadcrumb: Breadcrumb,
 }
 
-impl<'a> Editor	{
+impl<'a> Editor {
 	pub fn new(path: &'a Path) -> Self {
 		let buffer = sourceview5::Buffer::new(None);
 		// let editor_view = View::builder().build();
 
-		let editor_view = View::new();
+		let editor_view = View::with_buffer(&buffer);
 		editor_view.set_top_margin(10);
 		editor_view.set_right_margin(10);
 		editor_view.set_bottom_margin(10);
@@ -42,25 +42,28 @@ impl<'a> Editor	{
 		//editor_view.set_monospace(true);
 		//editor_view.set_tab_width(4);
 
-		//let config = Config::new();
-		//let editor_breadcrumb = gtk::Label::builder()
-		//	.label(config.app_name())
-		//	.margin_top(5)
-		//	.margin_start(5)
-		//	.margin_bottom(5)
-		//	.halign(gtk::Align::Start)
-		//	.build();
 		let editor_breadcrumb = Breadcrumb::new();
+		let editor_clone = editor_view.clone();
+		let controller = gtk::EventControllerKey::builder()
+			.propagation_phase(gtk::PropagationPhase::Capture)
+			.build();
+
+		controller.connect_key_released(move |_, _keyval, _keycode, _state| {
+			editor_clone
+				.activate_action("win.editor-key-up", Some(&"".to_variant()))
+				.expect("The action `editor-key-up` does not exist.");
+		});
+		editor_view.add_controller(controller.clone());
 
 		Self {
 			path: path.to_path_buf(),
 			buffer,
 			editor_view,
-			editor_breadcrumb
+			editor_breadcrumb,
 		}
 	}
 
-	pub fn add_buffer(&self, path: PathBuf) -> sourceview5::Buffer {
+	pub fn add_buffer(&self, path: &PathBuf) -> sourceview5::Buffer {
 		let buffer = sourceview5::Buffer::new(None);
 		//buffer.set_highlight_syntax(true);
 		let file = gio::File::for_path(path);
@@ -90,27 +93,13 @@ impl<'a> Editor	{
 		// @todo: all this cloning makes me sick...
 		// try to handle this with lifetimes
 		self.path = path.clone();
-		let buffer = self.add_buffer(path.clone());
+		let buffer = self.add_buffer(&path);
 		self.editor_view.set_buffer(Some(&buffer));
-		//self.editor_breadcrumb.set_label(&self.build_breadcrumb());
 		self.editor_breadcrumb = self.build_breadcrumb().clone();
 
 		// disable editor if no note is loaded to avoid
 		// writing into nothing
-		let controller = gtk::EventControllerKey::new();
 		if self.path.exists() {
-			let buffer_clone = buffer.clone();
-			let path_clone = path.clone();
-			controller.connect_key_released(move |_, _keyval, _keycode, _state| {
-				let buffer_start = buffer_clone.start_iter();
-				let buffer_end = buffer_clone.end_iter();
-				Notes::write_to_file(
-					&path_clone,
-					buffer_clone.text(&buffer_start, &buffer_end, false).to_string()
-				);
-			});
-			controller.set_propagation_phase(gtk::PropagationPhase::Capture);
-			self.editor_view.add_controller(controller);
 			self.set_editor_editable(true);
 		}
 		else {
@@ -138,6 +127,16 @@ impl<'a> Editor	{
 	fn build_breadcrumb(&self) -> &Breadcrumb {
 		self.editor_breadcrumb.build(&self.path);
 		&self.editor_breadcrumb
+	}
+
+	pub fn write_note(&self) {
+		let buffer_clone = self.editor_view.buffer();
+		let buffer_start = buffer_clone.start_iter();
+		let buffer_end = buffer_clone.end_iter();
+		Notes::write_to_file(
+			&self.path,
+			buffer_clone.text(&buffer_start, &buffer_end, false).to_string()
+		);
 	}
 }
 
