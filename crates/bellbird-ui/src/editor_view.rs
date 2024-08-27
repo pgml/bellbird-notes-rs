@@ -1,11 +1,11 @@
-use std::{
-	cell::RefCell,
-	path::{Path, PathBuf},
-	rc::Rc
-};
+use std::fmt::write;
+use std::rc::Rc;
+use std::path::{Path, PathBuf};
+use std::cell::RefCell;
 
+use bellbird_core::directories::Directories;
 use bellbird_core::{config::Config, notes::Notes};
-use gtk::{gio, glib::{self}, prelude::*};
+use gtk::{gio, glib, prelude::*};
 use sourceview5::{
 	self,
 	Buffer,
@@ -13,13 +13,14 @@ use sourceview5::{
 	prelude::ViewExt
 };
 
+use crate::breadcrumb::Breadcrumb;
+
 #[derive(Debug, Clone)]
 pub struct Editor {
 	pub path: PathBuf,
-	//pub buffers: Vec<Buffer>,
 	pub buffer: Buffer,
-	//pub editor_view: gtk::TextView,
 	pub editor_view: View,
+	pub editor_breadcrumb: Breadcrumb,
 }
 
 impl<'a> Editor	{
@@ -43,10 +44,21 @@ impl<'a> Editor	{
 		//editor_view.set_monospace(true);
 		//editor_view.set_tab_width(4);
 
+		//let config = Config::new();
+		//let editor_breadcrumb = gtk::Label::builder()
+		//	.label(config.app_name())
+		//	.margin_top(5)
+		//	.margin_start(5)
+		//	.margin_bottom(5)
+		//	.halign(gtk::Align::Start)
+		//	.build();
+		let editor_breadcrumb = Breadcrumb::new();
+
 		Self {
 			path: path.to_path_buf(),
 			buffer,
-			editor_view
+			editor_view,
+			editor_breadcrumb
 		}
 	}
 
@@ -82,6 +94,8 @@ impl<'a> Editor	{
 		self.path = path.clone();
 		let buffer = self.add_buffer(path.clone());
 		self.editor_view.set_buffer(Some(&buffer));
+		//self.editor_breadcrumb.set_label(&self.build_breadcrumb());
+		self.editor_breadcrumb = self.build_breadcrumb().clone();
 
 		// disable editor if no note is loaded to avoid
 		// writing into nothing
@@ -110,6 +124,10 @@ impl<'a> Editor	{
 		&self.editor_view
 	}
 
+	pub fn breadcrumb(&self) -> &Breadcrumb {
+		&self.editor_breadcrumb
+	}
+
 	pub fn editor_editable(&self) -> bool {
 		self.editor_view.is_editable() && self.editor_view.is_cursor_visible()
 	}
@@ -118,23 +136,24 @@ impl<'a> Editor	{
 		self.editor_view.set_editable(editable);
 		self.editor_view.set_cursor_visible(editable);
 	}
+
+	fn build_breadcrumb(&self) -> &Breadcrumb {
+		self.editor_breadcrumb.build(&self.path);
+		&self.editor_breadcrumb
+	}
 }
 
 pub fn build_ui(editor: Rc<RefCell<Editor>>) -> gtk::Box {
-	let config = Config::new();
 	let editor_panel = gtk::Box::builder()
 		.orientation(gtk::Orientation::Vertical)
-		//.margin_end(5)
 		.css_classes(["editor-panel"])
 		.build();
 
-	let editor_panel_label = gtk::Label::builder()
-		.label(config.app_name())
-		.margin_top(5)
-		.margin_start(5)
-		.margin_bottom(5)
-		.halign(gtk::Align::Start)
+	let editor_top_bar = gtk::Box::builder()
+		.orientation(gtk::Orientation::Horizontal)
 		.build();
+
+	editor_top_bar.append(editor.borrow_mut().breadcrumb());
 
 	let scrollable_window = gtk::ScrolledWindow::builder()
 		.child(editor.borrow_mut().view())
@@ -147,7 +166,7 @@ pub fn build_ui(editor: Rc<RefCell<Editor>>) -> gtk::Box {
 		.build();
 
 	//editor_panel.append(&_window_handle);
-	editor_panel.append(&editor_panel_label);
+	editor_panel.append(&editor_top_bar);
 	editor_panel.append(&scrollable_window);
 
 	editor_panel

@@ -65,6 +65,19 @@ headerbar {
 	background-color: #fff;
 }
 
+#breadcrumb {
+	color: #999;
+	font-size: 12px;
+}
+
+#breadcrumb .icon {
+	filter: invert(100%) brightness(150%) contrast(60%);
+}
+
+#breadcrumb .note-name {
+	font-weight: 700;
+}
+
 .status-bar {
 	background-color: #E4E5E7;
 }

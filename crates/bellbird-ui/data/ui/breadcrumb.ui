@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+	<template class="Breadcrumb" parent="GtkBox">
+		<property name="name">breadcrumb</property>
+		<property name="orientation">horizontal</property>
+		<property name="margin-start">18</property>
+		<property name="margin-top">8</property>
+		<property name="margin-bottom">5</property>
+		<child>
+			<object class="GtkImage" id="folder_icon">
+				<property name="pixel-size">13</property>
+				<property name="margin-start">0</property>
+				<property name="margin-end">1</property>
+				<style>
+					<class name="folder-icon"/>
+					<class name="icon"/>
+				</style>
+			</object>
+		</child>
+		<child>
+			<object class="GtkLabel" id="directory_path">
+				<property name="halign">start</property>
+				<property name="margin-start">0</property>
+			</object>
+		</child>
+		<child>
+			<object class="GtkImage" id="note_icon">
+				<property name="pixel-size">15</property>
+				<property name="margin-start">4</property>
+				<property name="margin-end">1</property>
+				<style>
+					<class name="note-icon"/>
+					<class name="icon"/>
+				</style>
+			</object>
+		</child>
+		<child>
+			<object class="GtkLabel" id="note_name">
+				<property name="halign">start</property>
+				<property name="margin-start">2</property>
+				<style>
+					<class name="note-name"/>
+				</style>
+			</object>
+		</child>
+	</template>
+</interface>
