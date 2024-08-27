@@ -99,7 +99,7 @@ impl Directories {
 		for entry in WalkDir::new(root_dir).max_depth(20) {
 			if let Ok(dir) = entry {
 				if path == dir.path() {
-					return dir.depth() as u32;
+					return (dir.depth() - 1) as u32;
 				}
 			}
 		}
@@ -110,7 +110,7 @@ impl Directories {
 		// @todo don't use Self::list
 		if let Ok(directory) = Self::list(path, true) {
 			for dir in directory {
-				return dir.children.len() > 0;
+				return dir.children.len() >= 0;
 			}
 		}
 		false

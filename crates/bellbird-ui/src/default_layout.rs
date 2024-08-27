@@ -5,6 +5,19 @@ window {
 	border-top: 1px solid #DBDBDB;
 }
 
+windowcontrols button {
+	-gtk-icon-size: 12px;
+	min-width: 18px;
+	min-height: 18px;
+	padding-top: 8px;
+	padding-right: 2px;
+	padding-left: 8px;
+}
+
+windowcontrols button:nth-child(2) {
+	padding-left: 2px;
+}
+
 headerbar {
 	background-color: #f0f0f0;
 	box-shadow: 0;
@@ -12,6 +25,7 @@ headerbar {
 
 .directories-panel {
 	/* border-right: 1px solid #DBDBDB; */
+	border-right: 1px solid #EAEAEA;
 }
 
 .directories-panel > label {
@@ -27,6 +41,10 @@ headerbar {
 
 .directories-panel row {
 	border-radius: 4px;
+}
+
+.directories-panel treeexpander.hide {
+	opacity: 0;
 }
 
 .notes-panel {
@@ -63,6 +81,10 @@ headerbar {
 	border-top-right-radius: 4px;
 	border-bottom-right-radius: 4px;
 	background-color: #fff;
+}
+
+.editor-panel textview {
+	line-height: 1.2;
 }
 
 #breadcrumb {

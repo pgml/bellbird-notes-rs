@@ -1,10 +1,8 @@
-use std::fmt::write;
 use std::rc::Rc;
 use std::path::{Path, PathBuf};
 use std::cell::RefCell;
 
-use bellbird_core::directories::Directories;
-use bellbird_core::{config::Config, notes::Notes};
+use bellbird_core::notes::Notes;
 use gtk::{gio, glib, prelude::*};
 use sourceview5::{
 	self,

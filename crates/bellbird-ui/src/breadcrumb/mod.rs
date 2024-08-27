@@ -1,6 +1,6 @@
 pub(crate) mod imp;
 
-use std::{fmt::write, path::Path};
+use std::path::Path;
 
 use bellbird_core::directories::Directories;
 use gtk::{glib, subclass::prelude::*};

@@ -3,7 +3,7 @@
 	<template class="Breadcrumb" parent="GtkBox">
 		<property name="name">breadcrumb</property>
 		<property name="orientation">horizontal</property>
-		<property name="margin-start">18</property>
+		<property name="margin-start">20</property>
 		<property name="margin-top">8</property>
 		<property name="margin-bottom">5</property>
 		<child>

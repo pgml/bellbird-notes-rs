@@ -132,7 +132,7 @@ pub fn build_ui(notes_list: Rc<RefCell<NotesList>>) -> gtk::Box {
 
 	let notes_panel_label = gtk::Label::builder()
 		.label("Notes")
-		.margin_start(5)
+		.margin_start(10)
 		.margin_end(5)
 		.margin_top(5)
 		.margin_bottom(5)
