@@ -4,8 +4,8 @@ use gtk::glib;
 #[derive(Debug, Default, gtk::CompositeTemplate)]
 #[template(file = "../../data/ui/directory_tree_row.ui")]
 pub struct DirectoryTreeRow {
-	#[template_child]
-	pub expander: TemplateChild<gtk::TreeExpander>,
+	//#[template_child]
+	//pub expander: TemplateChild<gtk::TreeExpander>,
 	#[template_child]
 	pub icon: TemplateChild<gtk::Image>,
 	#[template_child]
@@ -29,6 +29,6 @@ impl ObjectSubclass for DirectoryTreeRow {
 	}
 }
 
-impl ObjectImpl for DirectoryTreeRow { }
+impl ObjectImpl for DirectoryTreeRow {}
 impl BoxImpl for DirectoryTreeRow {}
 impl WidgetImpl for DirectoryTreeRow {}

@@ -14,6 +14,12 @@ use bellbird_core::directories::Directories;
 use crate::directory_tree_row::DirectoryTreeRow;
 
 #[derive(Debug, Clone)]
+pub struct TreeItem<'a> {
+	pub name: &'a str,
+	pub path: PathBuf
+}
+
+#[derive(Debug, Clone)]
 pub struct DirectoryTree {
 	pub path: PathBuf,
 	pub model: gio::ListStore,
@@ -24,7 +30,6 @@ pub struct DirectoryTree {
 impl<'a> DirectoryTree {
 	pub fn new(path: &'a Path) -> Self {
 		let model = gio::ListStore::new::<gtk::Label>();
-		//let model = gio::ListStore::new::<TreeItem>();
 		let model_clone = model.clone();
 		let config = Config::new();
 
@@ -32,26 +37,32 @@ impl<'a> DirectoryTree {
 		factory.connect_setup(move |_factory, item| {
 			let item = item.downcast_ref::<gtk::ListItem>().unwrap();
 			let row = DirectoryTreeRow::default();
+			//let expander = gtk::TreeExpander::new();
+			//let expander_icon = gtk::Image::builder()
+			//	.resource("/com/bellbird/notes/icons/arrow-right.svg")
+			//	.pixel_size(12)
+			//	.build();
+			//expander.set_child(Some(&expander_icon));
+			////row.set_expander(&expander);
 			item.set_child(Some(&row));
 		});
 
 		factory.connect_bind(move |_factory, item| {
 			let item = item.downcast_ref::<gtk::ListItem>().unwrap();
 			item.set_selectable(false);
-
 			let label = item.item().and_downcast::<gtk::Label>().unwrap();
 			let child = item.child().and_downcast::<DirectoryTreeRow>().unwrap();
 			let dir_name = &label.label();
 			let path = PathBuf::from(label.widget_name());
-			let depth_from_root = Directories::get_depth_from_root(&path);
+			//let depth_from_root = Directories::get_depth_from_root(&path);
 
-			//println!("{}", Directories::dir_has_children(&path));
-			let has_children = Directories::dir_has_children(&path);
+			//let has_children = Directories::dir_has_children(&path);
 			child.append_tree_item(
-				&dir_name,
-				&path,
-				depth_from_root,
-				has_children
+				&TreeItem { name: dir_name, path },
+				//&dir_name,
+				//&path,
+				//depth_from_root,
+				//has_children
 			);
 		});
 
@@ -102,7 +113,7 @@ impl<'a> DirectoryTree {
 	}
 
 	fn append_to_model(&self, path: &Path) {
-		if let Ok(directories) = Directories::list(&path, true) {
+		if let Ok(directories) = Directories::list(&path, 1) {
 			directories.iter().for_each(|directory| {
 				let dir_name = directory.name.clone();
 				let path = directory.path.display().to_string();
@@ -121,7 +132,7 @@ impl<'a> DirectoryTree {
 					.name(&path)
 					.build();
 				self.model.append(&label);
-				self.append_to_model(&directory.path);
+				//self.append_to_model(&directory.path);
 			})
 		}
 	}
