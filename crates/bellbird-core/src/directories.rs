@@ -1,3 +1,4 @@
+use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
 use anyhow::Result;
@@ -21,33 +22,27 @@ pub struct Directory {
 pub struct Directories;
 
 impl Directories {
-	pub fn list(path: &Path, recursive: bool) -> Result<Vec<Directory>> {
+	pub fn list(path: &Path, max_depth: usize) -> Result<Vec<Directory>> {
 		let mut directories: Vec<Directory> = vec![];
+		let walk_dir_iter = WalkDir::new(path)
+			.min_depth(1)
+			.max_depth(max_depth);
 
-		if !path.is_dir() {
-			return Ok(directories);
-		}
+		for entry in walk_dir_iter {
+			let entry_clone = entry?.clone();
+			let path = entry_clone.path();
 
-		for directory in fs::read_dir(path)? {
-			let path_buf = directory.as_ref().unwrap().path();
-			let file_name = path_buf.file_name().unwrap().to_str().unwrap().to_string();
-			//let path_str = path_buf;
-
-			if path_buf.is_dir() {
-				directories.push(Directory {
-					name: file_name,
-					path: path_buf.clone(),
-					children: if recursive {
-						Self::list(&path_buf, true)?
-					}
-					else {
-						vec![]
-					},
-					//nbr_notes: 0,
-					//nbr_folders: 0,
-					//is_expanded: false,
-				});
+			if !path.is_dir() {
+				continue;
 			}
+
+			directories.push(Directory {
+				name: path.file_name().unwrap().to_str().unwrap().to_string(),
+				path: path.to_path_buf(),
+				// get direct children for now
+				//children: Self::list(path, 1)?
+				children: vec![]
+			})
 		}
 
 		directories.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
@@ -96,7 +91,11 @@ impl Directories {
 
 	pub fn get_depth_from_root(path: &Path) -> u32 {
 		let root_dir = Self::root_directory();
-		for entry in WalkDir::new(root_dir).max_depth(20) {
+		let walk_dir_iter = WalkDir::new(root_dir)
+			.min_depth(1)
+			.max_depth(20);
+
+		for entry in walk_dir_iter {
 			if let Ok(dir) = entry {
 				if path == dir.path() {
 					return (dir.depth() - 1) as u32;
@@ -107,12 +106,6 @@ impl Directories {
 	}
 
 	pub fn dir_has_children(path: &Path) -> bool {
-		// @todo don't use Self::list
-		if let Ok(directory) = Self::list(path, true) {
-			for dir in directory {
-				return dir.children.len() >= 0;
-			}
-		}
-		false
+		Self::list(path, 1).unwrap().len() > 0
 	}
 }
