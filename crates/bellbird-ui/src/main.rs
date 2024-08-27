@@ -15,6 +15,7 @@ pub mod editor_view;
 pub mod directory_tree_row;
 pub mod notes_list_row;
 pub mod breadcrumb;
+pub mod action_entries;
 
 fn main() -> gtk::glib::ExitCode {
 	if let Err(e) = setup_gresources() {

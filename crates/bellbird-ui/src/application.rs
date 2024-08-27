@@ -1,9 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use gtk::gio::ActionEntry;
 use gtk::prelude::*;
-use gtk::{glib::{self}, ApplicationWindow};
+use gtk::glib;
 
 use bellbird_core::directories::Directories;
 use bellbird_core::config::Config;
@@ -12,7 +11,7 @@ use bellbird_core::notes::Notes;
 use crate::directory_tree::DirectoryTree;
 use crate::editor_view::Editor;
 use crate::notes_list::NotesList;
-use crate::directory_tree;
+use crate::{action_entries, directory_tree};
 use crate::notes_list;
 use crate::editor_view;
 use crate::default_layout;
@@ -39,14 +38,12 @@ fn build_ui(app: &adw::Application) {
 		.build();
 
 	let config = Config::new();
-	let window = ApplicationWindow::builder()
-		.application(app)
-		//.titlebar(&gtk::Box::new(gtk::Orientation::Horizontal, 0))
-		.title(config.app_name())
-		.default_width(1000)
-		.default_height(600)
-		.child(&window_box)
-		.build();
+	let window = gtk::ApplicationWindow::new(app);
+
+	//window.set_titlebar(Some(&gtk::Box::new(gtk::Orientation::Horizontal, 0)));
+	window.set_title(Some(&config.app_name()));
+	window.set_default_size(1000, 600);
+	window.set_child(Some(&window_box));
 
 	let bellbird_root = Directories::root_directory();
 	let path = Directories::current_directory_path();
@@ -61,12 +58,11 @@ fn build_ui(app: &adw::Application) {
 	notes_list.borrow_mut().update_path(path.to_path_buf());
 
 	let editor = Rc::new(RefCell::new(Editor::new(&note_path)));
-	//editor.borrow_mut().update_current_note(path.clone().into());
 	editor.borrow_mut().update_path(note_path.to_path_buf());
 
-	register_update_notes_action(&window, &notes_list, &directory_tree);
-	register_open_note_action(&window, &editor, &notes_list);
-	register_editor_key_up(&window, &editor);
+	action_entries::register_update_notes_action(&window, &notes_list, &directory_tree);
+	action_entries::register_open_note_action(&window, &editor, &notes_list);
+	action_entries::register_editor_key_up(&window, &editor);
 
 	panels_wrapper.append(&directory_tree::build_ui(directory_tree));
 	panels_wrapper.append(&notes_list::build_ui(notes_list));
@@ -89,64 +85,4 @@ fn load_css() {
 		&provider,
 		gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
 	);
-}
-
-fn register_update_notes_action(
-	window: &ApplicationWindow,
-	notes_list: &Rc<RefCell<NotesList>>,
-	directory_tree: &Rc<RefCell<DirectoryTree>>
-) {
-	let notes_list_clone = notes_list.clone();
-	let directory_tree_clone = directory_tree.clone();
-	let action_update_notes = ActionEntry::builder("update-notes")
-		.parameter_type(Some(&String::static_variant_type()))
-		.activate(move |_, _action, parameter| {
-			let path = parameter
-				.expect("Could not get Parameter")
-				.get::<String>()
-				.expect("The variant nees to be of type `String`");
-			let path_buf = std::path::PathBuf::from(path.clone());
-			directory_tree_clone.borrow_mut().update_current_directory(path.clone().into());
-			notes_list_clone.borrow_mut().update_path(path_buf);
-		})
-		.build();
-
-	window.add_action_entries([action_update_notes]);
-}
-
-fn register_open_note_action(
-	window: &ApplicationWindow,
-	editor: &Rc<RefCell<Editor>>,
-	notes_list: &Rc<RefCell<NotesList>>
-) {
-	let editor_clone = editor.clone();
-	let notes_list_clone = notes_list.clone();
-	let action_open_notes = ActionEntry::builder("open-note")
-		.parameter_type(Some(&String::static_variant_type()))
-		.activate(move |_, _action, parameter| {
-			let path = parameter
-				.expect("Could not get Parameter")
-				.get::<String>()
-				.expect("The variant nees to be of type `String`");
-			notes_list_clone.borrow_mut().update_current_note(path.clone().into());
-			editor_clone.borrow_mut().update_path(path.into());
-		})
-		.build();
-
-	window.add_action_entries([action_open_notes]);
-}
-
-fn register_editor_key_up(
-	window: &ApplicationWindow,
-	editor: &Rc<RefCell<Editor>>
-) {
-	let editor_clone = editor.clone();
-	let action_editor_key_up = ActionEntry::builder("editor-key-up")
-		.parameter_type(Some(&String::static_variant_type()))
-		.activate(move |_, _, _| {
-			editor_clone.borrow_mut().write_note();
-		})
-		.build();
-
-	window.add_action_entries([action_editor_key_up]);
 }
