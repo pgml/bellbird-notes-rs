@@ -192,12 +192,13 @@ pub fn build_ui(directory_tree: Rc<RefCell<DirectoryTree>>) -> gtk::Box {
 		.hscrollbar_policy(gtk::PolicyType::External)
 		.build();
 
-	let handle_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-	handle_box.append(&gtk::WindowControls::new(gtk::PackType::Start));
-	let _window_handle = gtk::WindowHandle::builder()
-		.child(&handle_box)
-		.build();
+	//let handle_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+	//handle_box.append(&gtk::WindowControls::new(gtk::PackType::Start));
+	//let _window_handle = gtk::WindowHandle::builder()
+	//	.child(&handle_box)
+	//	.build();
 
+	//handle_box.append(&directory_panel_label);
 	//directory_panel.append(&_window_handle);
 	directory_panel.append(&directory_panel_label);
 	directory_panel.append(&scrollable_window);

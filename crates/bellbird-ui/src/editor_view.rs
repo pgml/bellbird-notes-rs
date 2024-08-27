@@ -144,6 +144,9 @@ pub fn build_ui(editor: Rc<RefCell<Editor>>) -> gtk::Box {
 	let editor_panel = gtk::Box::builder()
 		.orientation(gtk::Orientation::Vertical)
 		.css_classes(["editor-panel"])
+		.margin_top(3)
+		.margin_bottom(3)
+		.margin_end(4)
 		.build();
 
 	let editor_top_bar = gtk::Box::builder()

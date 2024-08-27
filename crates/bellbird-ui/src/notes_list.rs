@@ -126,7 +126,9 @@ pub fn build_ui(notes_list: Rc<RefCell<NotesList>>) -> gtk::Box {
 		.vexpand(true)
 		.valign(gtk::Align::Fill)
 		.width_request(195)
-		.margin_end(4)
+		.margin_top(3)
+		.margin_bottom(3)
+		.margin_end(2)
 		.css_classes(["notes-panel"])
 		.build();
 
