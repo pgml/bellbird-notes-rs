@@ -8,6 +8,7 @@ use bellbird_core::directories::Directories;
 use bellbird_core::config::Config;
 use bellbird_core::notes::Notes;
 
+use crate::action_entries::ActionEntries;
 use crate::directory_tree::DirectoryTree;
 use crate::editor_view::Editor;
 use crate::notes_list::NotesList;
@@ -60,9 +61,16 @@ fn build_ui(app: &adw::Application) {
 	let editor = Rc::new(RefCell::new(Editor::new(&note_path)));
 	editor.borrow_mut().update_path(note_path.to_path_buf());
 
-	action_entries::register_update_notes_action(&window, &notes_list, &directory_tree);
-	action_entries::register_open_note_action(&window, &editor, &notes_list);
-	action_entries::register_editor_key_up(&window, &editor);
+	let action_entries = ActionEntries::new(
+		&window,
+		&app,
+		&editor,
+		&notes_list,
+		&directory_tree
+	);
+	action_entries.register_update_notes_action();
+	action_entries.register_open_note_action();
+	action_entries.register_editor_key_up();
 
 	panels_wrapper.append(&directory_tree::build_ui(directory_tree));
 	panels_wrapper.append(&notes_list::build_ui(notes_list));
