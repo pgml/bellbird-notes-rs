@@ -20,4 +20,4 @@ walkdir = "2.5.0"
 stable = []
 snapshot = []
 
-default = ["stable"]
+#default = ["stable"]
