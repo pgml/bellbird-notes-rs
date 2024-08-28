@@ -2,7 +2,7 @@ use gtk::subclass::prelude::*;
 use gtk::glib;
 
 #[derive(Debug, Default, gtk::CompositeTemplate)]
-#[template(file = "../../data/ui/directory_tree_row.ui")]
+#[template(resource = "/com/bellbird/notes/ui/directory_tree_row.ui")]
 pub struct DirectoryTreeRow {
 	//#[template_child]
 	//pub expander: TemplateChild<gtk::TreeExpander>,

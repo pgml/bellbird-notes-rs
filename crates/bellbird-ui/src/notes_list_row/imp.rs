@@ -10,7 +10,7 @@ use gtk::{
 };
 
 #[derive(Debug, Default, gtk::CompositeTemplate)]
-#[template(file = "../../data/ui/notes_list_row.ui")]
+#[template(resource = "/com/bellbird/notes/ui/notes_list_row.ui")]
 pub struct NotesListItem {
 	#[template_child]
 	pub icon: TemplateChild<gtk::Image>,

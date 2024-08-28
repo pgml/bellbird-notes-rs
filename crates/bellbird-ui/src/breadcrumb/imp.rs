@@ -2,7 +2,7 @@ use gtk::subclass::prelude::*;
 use gtk::glib;
 
 #[derive(Debug, Default, gtk::CompositeTemplate)]
-#[template(file = "../../data/ui/breadcrumb.ui")]
+#[template(resource = "/com/bellbird/notes/ui/breadcrumb.ui")]
 pub struct Breadcrumb {
 	#[template_child]
 	pub folder_icon: TemplateChild<gtk::Image>,
