@@ -9,10 +9,11 @@ use bellbird_core::config::Config;
 use bellbird_core::notes::Notes;
 
 use crate::action_entries::ActionEntries;
+use crate::contextmenu::notes_list_context_menu::NotesListContextMenu;
 use crate::directory_tree::DirectoryTree;
 use crate::editor_view::Editor;
 use crate::notes_list::NotesList;
-use crate::{action_entries, directory_tree};
+use crate::directory_tree;
 use crate::notes_list;
 use crate::editor_view;
 use crate::default_layout;
@@ -21,20 +22,21 @@ pub fn run() -> glib::ExitCode {
 	let config = Config::new();
 	let app = adw::Application::builder().application_id(config.app_id()).build();
 
-	// Connect to "activate" signal of `app`
 	app.connect_startup(|_| load_css());
 	app.connect_activate(build_ui);
-	// Run the application
+
 	app.run()
 }
 
 fn build_ui(app: &adw::Application) {
 	let window_box = gtk::Box::builder()
 		.orientation(gtk::Orientation::Vertical)
+		.name("window-box")
 		.build();
 
 	let panels_wrapper = gtk::Box::builder()
 		.orientation(gtk::Orientation::Horizontal)
+		.name("panels-wrapper")
 		.spacing(0)
 		.build();
 
