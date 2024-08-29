@@ -4,6 +4,8 @@ use anyhow::Result;
 
 use crate::config::{Config, ConfigOptions, ConfigSections};
 
+const NOTES_EXTENSION: &str = "note";
+
 #[derive(Debug)]
 pub struct Note {
 	// pub id: i32,
@@ -52,7 +54,20 @@ impl<'a> Notes {
 		Ok(notes.into())
 	}
 
-	pub fn write_to_file(path: &Path, content: String) -> bool {
+	pub fn write_to_file(mut path: PathBuf, content: String) -> bool {
+		let path_ = path.to_str().unwrap();
+
+		if let Some(extension) = path.extension() {
+			if extension != NOTES_EXTENSION {
+				let path_with_extension = format!(
+					"{}.{}",
+					path_,
+					NOTES_EXTENSION
+				);
+				path = PathBuf::from(path_with_extension);
+			}
+		}
+
 		match fs::write(path, content) {
 			Ok(_) => true,
 			Err(_) => false,

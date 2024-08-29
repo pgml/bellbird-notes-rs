@@ -50,7 +50,7 @@ impl<'a> Editor {
 
 		controller.connect_key_released(move |_, _keyval, _keycode, _state| {
 			editor_clone
-				.activate_action("win.editor-key-up", Some(&"".to_variant()))
+				.activate_action("app.editor-key-up", Some(&"".to_variant()))
 				.expect("The action `editor-key-up` does not exist.");
 		});
 		editor_view.add_controller(controller.clone());
@@ -134,13 +134,13 @@ impl<'a> Editor {
 		let buffer_start = buffer_clone.start_iter();
 		let buffer_end = buffer_clone.end_iter();
 		Notes::write_to_file(
-			&self.path,
+			self.path.clone(),
 			buffer_clone.text(&buffer_start, &buffer_end, false).to_string()
 		);
 	}
 }
 
-pub fn build_ui(editor: Rc<RefCell<Editor>>) -> gtk::Box {
+pub fn build_ui(editor: &Rc<RefCell<Editor>>) -> gtk::Box {
 	let editor_panel = gtk::Box::builder()
 		.orientation(gtk::Orientation::Vertical)
 		.css_classes(["editor-panel"])

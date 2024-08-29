@@ -51,48 +51,48 @@ fn build_ui(app: &adw::Application) {
 	let bellbird_root = Directories::root_directory();
 	let path = Directories::current_directory_path();
 	let note_path = Notes::current_note_path();
-
 	let directory_tree = Rc::new(RefCell::new(DirectoryTree::new(&bellbird_root)));
+	let notes_list = Rc::new(RefCell::new(NotesList::new(&path)));
+	let editor = Rc::new(RefCell::new(Editor::new(&note_path)));
+
 	directory_tree.borrow_mut().update_current_directory(path.clone().into());
 	directory_tree.borrow_mut().update_path(bellbird_root.to_path_buf());
-
-	let notes_list = Rc::new(RefCell::new(NotesList::new(&path)));
 	notes_list.borrow_mut().update_current_note(note_path.clone().into());
 	notes_list.borrow_mut().update_path(path.to_path_buf());
-
-	let editor = Rc::new(RefCell::new(Editor::new(&note_path)));
 	editor.borrow_mut().update_path(note_path.to_path_buf());
 
+	on_startup(app, &notes_list);
 	let action_entries = ActionEntries::new(
-		&window,
 		&app,
 		&editor,
 		&notes_list,
 		&directory_tree
 	);
-	action_entries.register_update_notes_action();
+	action_entries.register_refresh_notes_action();
 	action_entries.register_open_note_action();
 	action_entries.register_editor_key_up();
 
-	panels_wrapper.append(&directory_tree::build_ui(directory_tree));
-	panels_wrapper.append(&notes_list::build_ui(notes_list));
-	panels_wrapper.append(&editor_view::build_ui(editor));
+	panels_wrapper.append(&directory_tree::build_ui(&directory_tree));
+	panels_wrapper.append(&notes_list::build_ui(&notes_list));
+	panels_wrapper.append(&editor_view::build_ui(&editor));
 
 	window_box.append(&panels_wrapper);
 
-	// Present window
 	window.present();
 }
 
 fn load_css() {
-	// Load the CSS file and add it to the provider
 	let provider = gtk::CssProvider::new();
 	provider.load_from_string(default_layout::DEFAULT_STYLE);
 
-	// Add the provider to the default screen
 	gtk::style_context_add_provider_for_display(
 		&gtk::gdk::Display::default().expect("Could not connect to a display."),
 		&provider,
 		gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
 	);
+}
+
+fn on_startup(app: &adw::Application, notes_list: &Rc<RefCell<NotesList>>) {
+	let notes_list_context_menu = NotesListContextMenu::new(app.clone(), notes_list.clone());
+	notes_list_context_menu.setup_context_menu_actions();
 }

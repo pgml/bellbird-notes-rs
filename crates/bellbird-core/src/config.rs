@@ -76,7 +76,7 @@ impl<'a> Config {
 	pub fn app_id(&self) -> String {
 		let mut id = "org.bellbird.notes".to_string();
 		if self.app_version() == "snapshot".to_string() {
-			id = format!("{} {}", id, "-snapshot");
+			id = format!("{}-{}", id, "snapshot");
 		}
 		id
 	}

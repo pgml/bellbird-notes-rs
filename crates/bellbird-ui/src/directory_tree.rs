@@ -93,8 +93,8 @@ impl<'a> DirectoryTree {
 			);
 
 			list_view
-				.activate_action("win.update-notes", Some(&path.to_variant()))
-				.expect("The action `update-notes` does not exist.");
+				.activate_action("app.refresh-notes", Some(&path.to_variant()))
+				.expect("The action `refresh-notes` does not exist.");
 		});
 
 		Self {
@@ -169,12 +169,13 @@ impl<'a> DirectoryTree {
 	}
 }
 
-pub fn build_ui(directory_tree: Rc<RefCell<DirectoryTree>>) -> gtk::Box {
+pub fn build_ui(directory_tree: &Rc<RefCell<DirectoryTree>>) -> gtk::Box {
 	let directory_panel = gtk::Box::builder()
 		.orientation(gtk::Orientation::Vertical)
 		.vexpand(true)
 		.valign(gtk::Align::Fill)
 		.width_request(190)
+		.name("directories-tree")
 		.css_classes(["directories-panel"])
 		.build();
 
