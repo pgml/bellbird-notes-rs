@@ -6,7 +6,23 @@ window {
 	font-size: 13px;
 }
 
-window * {
+text {
+	background-color: #fff;
+	padding: 6px;
+}
+
+.dialogue {
+	border-top: 0;
+}
+
+.dialogue .button {
+	background-color: #FEFEFE;
+	border-radius: 4px;
+	padding: 6px 0;
+}
+
+.dialogue button label {
+	font-weight: 400;
 }
 
 windowcontrols button {
