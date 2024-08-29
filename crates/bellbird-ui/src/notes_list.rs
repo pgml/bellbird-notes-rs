@@ -4,10 +4,10 @@ use std::rc::Rc;
 
 use bellbird_core::notes::Notes;
 
-use gtk::{
-	gio, prelude::*
-};
+use gtk::gio;
+use gtk::prelude::*;
 
+use crate::contextmenu::{BbMenuItem, BbMenuSection, ContextMenu};
 use crate::notes_list_row::NotesListItem;
 
 #[derive(Debug, Clone)]
@@ -65,7 +65,7 @@ impl<'a> NotesList {
 			Notes::set_current_note_path(&PathBuf::from(path.clone()));
 
 			list_view
-				.activate_action("win.open-note", Some(&path.to_variant()))
+				.activate_action("app.open-note", Some(&path.to_variant()))
 				.expect("The action `open-note` does not exist.");
 		});
 
@@ -80,7 +80,7 @@ impl<'a> NotesList {
 	pub fn update_path(&mut self, path: PathBuf) {
 		self.path = path.clone();
 		self.model.remove_all();
-
+		println!("{:?}", path);
 		if let Ok(notes) =  Notes::list(&path) {
 			notes.iter().for_each(|note| {
 				let label = gtk::Label::builder()
@@ -94,6 +94,10 @@ impl<'a> NotesList {
 		}
 
 		self.set_selection();
+	}
+
+	pub fn refresh(&mut self) {
+		self.update_path(self.path.clone());
 	}
 
 	pub fn update_current_note(&self, path: PathBuf) {
@@ -118,9 +122,32 @@ impl<'a> NotesList {
 			}
 		}
 	}
+
+	fn build_context_menu(&self) {
+		let mut sections = vec![];
+		let mut sec0 = vec![];
+		sec0.push(BbMenuItem { label: "Open in New Tab", action: "open-note-in-new-tab" });
+		sections.push(BbMenuSection { label: None, items: sec0 });
+
+		let mut sec1 = vec![];
+		sec1.push(BbMenuItem { label: "Create Note", action: "create-note" });
+		sections.push(BbMenuSection { label: None, items: sec1 });
+
+		let mut sec2 = vec![];
+		sec2.push(BbMenuItem { label: "Duplicate Note", action: "duplicate-note" });
+		sec2.push(BbMenuItem { label: "Pin / Unpin Note", action: "toggle-pin-note" });
+		sec2.push(BbMenuItem { label: "Rename Note", action: "rename-note" });
+		sections.push(BbMenuSection { label: None, items: sec2 });
+
+		let mut sec3 = vec![];
+		sec3.push(BbMenuItem { label: "Delete Note", action: "delete-note" });
+		sections.push(BbMenuSection { label: None, items: sec3 });
+
+		ContextMenu::new(sections, &self.list_view, 180).build();
+	}
 }
 
-pub fn build_ui(notes_list: Rc<RefCell<NotesList>>) -> gtk::Box {
+pub fn build_ui(notes_list: &Rc<RefCell<NotesList>>) -> gtk::Box {
 	let notes_panel = gtk::Box::builder()
 		.orientation(gtk::Orientation::Vertical)
 		.vexpand(true)
@@ -141,11 +168,12 @@ pub fn build_ui(notes_list: Rc<RefCell<NotesList>>) -> gtk::Box {
 		.halign(gtk::Align::Start)
 		.build();
 
-	// let notes_list = NotesList::new("");
 	let scrollable_window = gtk::ScrolledWindow::builder()
 		.child(notes_list.borrow_mut().view())
 		.hscrollbar_policy(gtk::PolicyType::External)
 		.build();
+
+	notes_list.borrow_mut().build_context_menu();
 
 	notes_panel.append(&notes_panel_label);
 	notes_panel.append(&scrollable_window);
