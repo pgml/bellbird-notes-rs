@@ -14,14 +14,7 @@ impl<'a> Dialogue<'a> {
 		}
 	}
 
-	pub fn input<F: 'static, C>(
-		&self,
-		title: &str,
-		label: &str,
-		placeholder: &str,
-		ok: F,
-		cancel: C
-	)
+	pub fn input<F: 'static, C>(&self, title: &str, label: &str, placeholder: &str, ok: F, cancel: C)
 	where
 		F: Fn(String),
 		C: Fn() + 'static
@@ -48,12 +41,40 @@ impl<'a> Dialogue<'a> {
 			let note_name = input_clone.text();
 			ok(note_name.to_string());
 		}));
-		button_box.append(&self.cancel_button(move || {
-			cancel();
-		}));
+		button_box.append(&self.cancel_button(move || cancel()));
 
 		window_box.append(&label);
 		window_box.append(&input);
+		window_box.append(&button_box);
+
+		self.window.set_child(Some(&window_box));
+		self.window.present();
+	}
+
+	pub fn warning_yes_no<F: 'static, C>(&self, title: &str, label: &str, description: &str, ok: F, cancel: C)
+	where
+		F: Fn(),
+		C: Fn() + 'static
+	{
+		self.create_window(title, 300, 0);
+
+		let window_box = gtk::Box::builder()
+			.orientation(gtk::Orientation::Vertical)
+			.margin_start(15)
+			.margin_end(15)
+			.margin_top(10)
+			.margin_bottom(10)
+			.build();
+
+		let label = self.label(label);
+		let description = self.label(description);
+		let button_box = self.button_box();
+
+		button_box.append(&self.ok_button(move || ok()));
+		button_box.append(&self.cancel_button(move || cancel()));
+
+		window_box.append(&label);
+		window_box.append(&description);
 		window_box.append(&button_box);
 
 		self.window.set_child(Some(&window_box));

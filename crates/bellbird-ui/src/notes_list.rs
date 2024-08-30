@@ -16,6 +16,7 @@ pub struct NotesList {
 	pub model: gio::ListStore,
 	pub list_view: gtk::ListView,
 	pub current_note: Rc<RefCell<PathBuf>>,
+	pub selected_ctx_path: Rc<RefCell<PathBuf>>,
 }
 
 impl<'a> NotesList {
@@ -40,7 +41,6 @@ impl<'a> NotesList {
 
 		let selection_model = gtk::MultiSelection::new(Some(model_clone));
 
-		//let list_view = gtk::ListView::builder()
 		let list_view = gtk::ListView::builder()
 			.model(&selection_model)
 			.factory(&factory)
@@ -54,8 +54,6 @@ impl<'a> NotesList {
 			.show_separators(true)
 			.build();
 
-		let current_note = Rc::new(RefCell::new(path.to_path_buf()));
-		//let current_note_clone = current_note.clone();
 		list_view.connect_activate(move |list_view, position| {
 			let model = list_view.model().unwrap();
 			let label = model.item(position).and_downcast::<gtk::Label>().unwrap();
@@ -71,7 +69,8 @@ impl<'a> NotesList {
 			path: path.to_path_buf(),
 			model,
 			list_view,
-			current_note,
+			current_note: Rc::new(RefCell::new(path.to_path_buf())),
+			selected_ctx_path: Rc::new(RefCell::new(path.to_path_buf())),
 		}
 	}
 
@@ -99,6 +98,10 @@ impl<'a> NotesList {
 
 	pub fn update_current_note(&self, path: PathBuf) {
 		self.current_note.borrow_mut().set_file_name(path);
+	}
+
+	pub fn set_selected_ctx_note(&self, path: PathBuf) {
+		self.selected_ctx_path.borrow_mut().set_file_name(path);
 	}
 
 	fn view(&self) -> &gtk::ListView {
@@ -141,6 +144,7 @@ impl<'a> NotesList {
 		sections.push(BbMenuSection { label: None, items: sec3 });
 
 		let app_clone = app.clone();
+		let self_clone = self.clone();
 
 		ContextMenu::new(sections, &self.list_view, 180).build(move |widget| {
 			let actions = vec![
@@ -176,6 +180,7 @@ impl<'a> NotesList {
 							}
 						}
 
+						self_clone.set_selected_ctx_note(note_path.clone().into());
 						println!("{:?}", note_path);
 						if should_activate_on_note_items {
 							for action in actions.iter() {

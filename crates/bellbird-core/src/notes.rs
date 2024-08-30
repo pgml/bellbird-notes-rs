@@ -73,6 +73,13 @@ impl<'a> Notes {
 		}
 	}
 
+	pub fn delete_file(path: PathBuf) -> bool {
+		match fs::remove_file(&path) {
+			Ok(_) => true,
+			Err(_e) => false,
+		}
+	}
+
 	pub fn current_note_path() -> PathBuf {
 		let config = Config::new();
 		let mut value = config.value(

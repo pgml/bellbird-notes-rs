@@ -9,13 +9,15 @@ glib::wrapper! {
 
 impl Default for NotesListItem {
 	fn default() -> Self {
-		glib::Object::new()
+		NotesListItem::new()
 	}
 }
 
 impl NotesListItem {
-	pub fn new()  {
-		// let object = Object::new();
+  pub const NONE: Option<&'static NotesListItem> = None;
+
+	pub fn new() -> Self {
+		glib::Object::new()
 	}
 
 	pub fn append_tree_item(&self, item_label: &gtk::Label) {
