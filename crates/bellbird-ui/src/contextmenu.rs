@@ -39,10 +39,12 @@ impl<'a> ContextMenu<'a> {
 		}
 	}
 
-	pub fn build(&self) {
+	pub fn build<F: 'static>(&self, on_pressed: F)
+	where
+		F: Fn(gtk::Widget)
+	{
 		self.popover.set_menu_model(Some(&self.menu_model()));
 		self.popover.set_parent(self.parent);
-		self.popover.add_child(&gtk::Separator::new(gtk::Orientation::Horizontal), "separator");
 		self.popover.set_has_arrow(false);
 		self.popover.set_size_request(self.width, 0);
 
@@ -59,11 +61,7 @@ impl<'a> ContextMenu<'a> {
 				popover.popup();
 
 				if let Some(list_row_item) = list_view_clone.pick(x, y, gtk::PickFlags::DEFAULT) {
-					if list_row_item.widget_name() != "GtkListView" {
-						//let action = action_group.lookup_action("your-action-name").unwrap();
-						//action.set_enabled(true);  // Activate the action when hovering
-						//Inhibit(false)
-					}
+					on_pressed(list_row_item);
 				}
 			}
 		});

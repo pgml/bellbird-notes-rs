@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use gtk::prelude::*;
 use gtk::glib;
@@ -23,7 +24,10 @@ pub fn run() -> glib::ExitCode {
 	let app = adw::Application::builder().application_id(config.app_id()).build();
 
 	app.connect_startup(|_| load_css());
-	app.connect_activate(build_ui);
+	//app.connect_activate(build_ui);
+	app.connect_activate(|app| {
+		build_ui(&app);
+	});
 
 	app.run()
 }
@@ -61,19 +65,10 @@ fn build_ui(app: &adw::Application) {
 	notes_list.borrow_mut().update_path(path.to_path_buf());
 	editor.borrow_mut().update_path(note_path.to_path_buf());
 
-	on_startup(app, &notes_list);
-	let action_entries = ActionEntries::new(
-		&app,
-		&editor,
-		&notes_list,
-		&directory_tree
-	);
-	action_entries.register_refresh_notes_action();
-	action_entries.register_open_note_action();
-	action_entries.register_editor_key_up();
+	register_actions(app, &directory_tree, &notes_list, &editor);
 
 	panels_wrapper.append(&directory_tree::build_ui(&directory_tree));
-	panels_wrapper.append(&notes_list::build_ui(&notes_list));
+	panels_wrapper.append(&notes_list::build_ui(&app.clone(), &notes_list));
 	panels_wrapper.append(&editor_view::build_ui(&editor));
 
 	window_box.append(&panels_wrapper);
@@ -92,7 +87,25 @@ fn load_css() {
 	);
 }
 
-fn on_startup(app: &adw::Application, notes_list: &Rc<RefCell<NotesList>>) {
-	let notes_list_context_menu = NotesListContextMenu::new(app.clone(), notes_list.clone());
+fn register_actions(
+	app: &adw::Application,
+	directory_tree: &Rc<RefCell<DirectoryTree>>,
+	notes_list: &Rc<RefCell<NotesList>>,
+	editor: &Rc<RefCell<Editor>>,
+) {
+	let notes_list_context_menu = Arc::new(NotesListContextMenu::new(
+		app.clone(),
+		notes_list.clone()
+	));
 	notes_list_context_menu.setup_context_menu_actions();
+
+	let action_entries = ActionEntries::new(
+		&app,
+		&directory_tree,
+		&notes_list,
+		&editor,
+	);
+	action_entries.register_refresh_notes_action();
+	action_entries.register_open_note_action();
+	action_entries.register_editor_key_up();
 }

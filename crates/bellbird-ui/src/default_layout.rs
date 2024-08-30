@@ -8,7 +8,8 @@ window {
 
 text {
 	background-color: #fff;
-	padding: 6px;
+	padding: 8px;
+	border-radius: 4px;
 }
 
 .dialogue {
@@ -17,8 +18,6 @@ text {
 
 .dialogue .button {
 	background-color: #FEFEFE;
-	border-radius: 4px;
-	padding: 6px 0;
 }
 
 .dialogue button label {

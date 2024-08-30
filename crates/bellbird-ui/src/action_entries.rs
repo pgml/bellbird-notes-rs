@@ -20,9 +20,9 @@ pub struct ActionEntries<'a> {
 impl<'a> ActionEntries<'a> {
 	pub fn new(
 		app: &'a adw::Application,
-		editor: &'a Rc<RefCell<Editor>>,
-		notes_list: &'a Rc<RefCell<NotesList>>,
 		directory_tree: &'a Rc<RefCell<DirectoryTree>>,
+		notes_list: &'a Rc<RefCell<NotesList>>,
+		editor: &'a Rc<RefCell<Editor>>,
 	) -> Self {
 		Self {
 			app,
@@ -92,4 +92,3 @@ impl<'a> ActionEntries<'a> {
 		self.app.add_action_entries([action_create_note]);
 	}
 }
-

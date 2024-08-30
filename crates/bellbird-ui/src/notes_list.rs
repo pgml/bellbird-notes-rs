@@ -62,8 +62,6 @@ impl<'a> NotesList {
 			let path = label.widget_name();
 			model.select_item(position, true);
 
-			Notes::set_current_note_path(&PathBuf::from(path.clone()));
-
 			list_view
 				.activate_action("app.open-note", Some(&path.to_variant()))
 				.expect("The action `open-note` does not exist.");
@@ -80,7 +78,7 @@ impl<'a> NotesList {
 	pub fn update_path(&mut self, path: PathBuf) {
 		self.path = path.clone();
 		self.model.remove_all();
-		println!("{:?}", path);
+
 		if let Ok(notes) =  Notes::list(&path) {
 			notes.iter().for_each(|note| {
 				let label = gtk::Label::builder()
@@ -88,7 +86,6 @@ impl<'a> NotesList {
 					.name(&note.path)
 					.build();
 
-				// println!("{:?}", label);
 				self.model.append(&label)
 			})
 		}
@@ -123,10 +120,10 @@ impl<'a> NotesList {
 		}
 	}
 
-	fn build_context_menu(&self) {
+	fn build_context_menu(&self, app: &adw::Application) {
 		let mut sections = vec![];
 		let mut sec0 = vec![];
-		sec0.push(BbMenuItem { label: "Open in New Tab", action: "open-note-in-new-tab" });
+		sec0.push(BbMenuItem { label: "Open in New Tab", action: "open-note-in-tab" });
 		sections.push(BbMenuSection { label: None, items: sec0 });
 
 		let mut sec1 = vec![];
@@ -143,11 +140,72 @@ impl<'a> NotesList {
 		sec3.push(BbMenuItem { label: "Delete Note", action: "delete-note" });
 		sections.push(BbMenuSection { label: None, items: sec3 });
 
-		ContextMenu::new(sections, &self.list_view, 180).build();
+		let app_clone = app.clone();
+
+		ContextMenu::new(sections, &self.list_view, 180).build(move |widget| {
+			let actions = vec![
+				"open-note-in-tab",
+				"duplicate-note",
+				"toggle-pin-note",
+				"rename-note",
+				"delete-note"
+			];
+			for action in actions.iter() {
+				app_clone.action_enabled_changed(action, false);
+			}
+
+			if widget.widget_name() != "GtkListView" {
+				match widget.parent() {
+					Some(parent) => {
+						#[allow(unused)]
+						let mut should_activate_on_note_items = false;
+						let mut note_path = PathBuf::from("");
+
+						if parent.widget_name() == "NotesListRow" {
+							should_activate_on_note_items = true;
+							if let Some(label) = parent.last_child().and_downcast::<gtk::Label>() {
+								note_path.push(label.label());
+							}
+						}
+						else {
+							should_activate_on_note_items = true;
+							if let Some(first_child) = parent.first_child() {
+								if let Some(label) = first_child.last_child().and_downcast::<gtk::Label>() {
+									note_path.push(label.label());
+								}
+							}
+						}
+
+						println!("{:?}", note_path);
+						if should_activate_on_note_items {
+							for action in actions.iter() {
+								app_clone.action_enabled_changed(action, true);
+							}
+						}
+					},
+					None => println!("nope")
+				}
+			}
+		});
+	}
+
+	fn _enable_actions(&self, app: &adw::Application, actions: Vec<&str>) {
+		for action in actions.iter() {
+			app.action_enabled_changed(action, true);
+		}
+	}
+
+	fn _disable_actions(&self, app: adw::Application, actions: Vec<&str>) {
+		for action in actions.iter() {
+			app.action_enabled_changed(action, false);
+		}
 	}
 }
 
-pub fn build_ui(notes_list: &Rc<RefCell<NotesList>>) -> gtk::Box {
+pub fn build_ui(
+	app: &adw::Application,
+	notes_list: &Rc<RefCell<NotesList>>
+) -> gtk::Box {
 	let notes_panel = gtk::Box::builder()
 		.orientation(gtk::Orientation::Vertical)
 		.vexpand(true)
@@ -173,7 +231,7 @@ pub fn build_ui(notes_list: &Rc<RefCell<NotesList>>) -> gtk::Box {
 		.hscrollbar_policy(gtk::PolicyType::External)
 		.build();
 
-	notes_list.borrow_mut().build_context_menu();
+	notes_list.borrow_mut().build_context_menu(app);
 
 	notes_panel.append(&notes_panel_label);
 	notes_panel.append(&scrollable_window);

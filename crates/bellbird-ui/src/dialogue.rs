@@ -14,7 +14,14 @@ impl<'a> Dialogue<'a> {
 		}
 	}
 
-	pub fn input<F: 'static, C>(&self, title: &str, ok: F, cancel: C)
+	pub fn input<F: 'static, C>(
+		&self,
+		title: &str,
+		label: &str,
+		placeholder: &str,
+		ok: F,
+		cancel: C
+	)
 	where
 		F: Fn(String),
 		C: Fn() + 'static
@@ -29,9 +36,9 @@ impl<'a> Dialogue<'a> {
 			.margin_bottom(10)
 			.build();
 
-		let label = self.label("Enter note name:");
+		let label = self.label(label);
 		let input = gtk::Text::builder()
-			.placeholder_text("New Note")
+			.text(placeholder)
 			.build();
 
 		let input_clone = input.clone();
