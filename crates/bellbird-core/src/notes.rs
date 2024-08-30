@@ -55,26 +55,27 @@ impl<'a> Notes {
 	}
 
 	pub fn write_to_file(mut path: PathBuf, content: String) -> bool {
-		path = match path.extension() {
-			Some(_) => path,
-			None => {
-				let path_with_extension = format!(
-					"{}.{}",
-					path.to_str().unwrap(),
-					NOTES_EXTENSION
-				);
-				PathBuf::from(path_with_extension)
-			}
-		};
-
+		path = Self::ensure_correct_path(&path);
 		match fs::write(path, content) {
 			Ok(_) => true,
 			Err(_) => false,
 		}
 	}
 
-	pub fn delete_file(path: PathBuf) -> bool {
-		match fs::remove_file(&path) {
+	pub fn rename_file(mut old_path: PathBuf, mut new_path: PathBuf) -> bool {
+		old_path = Self::ensure_correct_path(&old_path);
+		new_path = Self::ensure_correct_path(&new_path);
+		return match fs::rename(old_path, new_path) {
+			Ok(()) => true,
+			Err(e) => {
+				println!("{}", e);
+				false
+			}
+		}
+	}
+
+	pub fn delete_file(path: &Path) -> bool {
+		match fs::remove_file(path) {
 			Ok(_) => true,
 			Err(_e) => false,
 		}
@@ -96,5 +97,19 @@ impl<'a> Notes {
 			ConfigOptions::CurrentNote,
 			path.display().to_string()
 		);
+	}
+
+	fn ensure_correct_path(path: &Path) -> PathBuf {
+		match path.extension() {
+			Some(_) => path.to_path_buf(),
+			None => {
+				let path_with_extension = format!(
+					"{}.{}",
+					path.to_str().unwrap(),
+					NOTES_EXTENSION
+				);
+				PathBuf::from(path_with_extension)
+			}
+		}
 	}
 }

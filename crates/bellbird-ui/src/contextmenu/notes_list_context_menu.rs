@@ -1,4 +1,4 @@
-use std::{cell::RefCell, path::PathBuf, rc::Rc, sync::Arc};
+use std::{cell::RefCell, path::{Path, PathBuf}, rc::Rc, sync::Arc};
 
 use bellbird_core::notes::Notes;
 use gtk::{gio, prelude::*};
@@ -46,7 +46,10 @@ impl NotesListContextMenu {
 		app_clone.add_action(&pin_note);
 
 		let rename_note = gio::SimpleAction::new("rename-note", None);
-		rename_note.connect_activate(move |_, _| println!("rename note"));
+		{
+			let self_clone = Arc::clone(&self);
+			rename_note.connect_activate(move |_, _| self_clone.rename_note());
+		}
 		app_clone.add_action(&rename_note);
 
 		let delete_note = gio::SimpleAction::new("delete-note", None);
@@ -75,28 +78,52 @@ impl NotesListContextMenu {
 		)
 	}
 
+	fn rename_note(&self) {
+		let notes_list_clone = self.notes_list.clone();
+		let dialogue = Dialogue::new(&self.app);
+		let pathbuf_rc = self.notes_list.borrow_mut().selected_ctx_path.clone();
+		let (note_path, file_stem) = self.get_path_and_stem(&pathbuf_rc);
+		dialogue.input(
+			"Rename Note",
+			&format!("Rename ´{}´ to:", file_stem),
+			&file_stem,
+			move |note| {
+				let mut new_path = PathBuf::from(notes_list_clone.borrow_mut()
+					                           .path.to_str().unwrap_or(""));
+				new_path.push(&note);
+				let old_path = PathBuf::from(&note_path);
+				Notes::rename_file(old_path, new_path);
+				notes_list_clone.borrow_mut().refresh();
+			},
+			|| {}
+		)
+	}
+
 	fn delete_note(&self) {
 		// this whole thing is pretty ugly
 		// but works for now
 		let app_clone = self.app.clone();
 		let notes_list_clone = self.notes_list.clone();
 		let dialogue = Dialogue::new(&app_clone);
-		let ctx_path_binding = self.notes_list.borrow_mut().selected_ctx_path.clone();
-		let note_path = ctx_path_binding.borrow_mut();
-		let file_stem = note_path.file_stem().unwrap().to_str().unwrap();
-		let note_path = note_path.display().to_string();
-		let notes_list_binding = notes_list_clone.clone();
+		let pathbuf_rc = self.notes_list.borrow_mut().selected_ctx_path.clone();
+		let (note_path, file_stem) = self.get_path_and_stem(&pathbuf_rc);
 		dialogue.warning_yes_no(
 			"Delete New Note",
 			"Do you really want to delete this note?",
 			&format!("´{}´", file_stem),
 			move || {
-				let mut notes_list = notes_list_binding.borrow_mut();
-				let path = PathBuf::from(&note_path);
-				Notes::delete_file(path);
-				notes_list.refresh();
+				Notes::delete_file(&PathBuf::from(&note_path));
+				notes_list_clone.borrow_mut().refresh();
 			},
 			|| {}
 		)
+	}
+
+	fn get_path_and_stem(&self, path: &Rc<RefCell<PathBuf>>) -> (String, String) {
+		let note_path = path.borrow_mut();
+		let file_stem = note_path.file_stem().unwrap()
+			              .to_str().unwrap().to_string();
+		let note_path = note_path.display().to_string();
+		(note_path, file_stem)
 	}
 }

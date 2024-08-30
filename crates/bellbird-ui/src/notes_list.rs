@@ -125,17 +125,17 @@ impl<'a> NotesList {
 
 	fn build_context_menu(&self, app: &adw::Application) {
 		let mut sections = vec![];
-		let mut sec0 = vec![];
-		sec0.push(BbMenuItem { label: "Open in New Tab", action: "open-note-in-tab" });
-		sections.push(BbMenuSection { label: None, items: sec0 });
+		//let mut sec0 = vec![];
+		//sec0.push(BbMenuItem { label: "Open in New Tab", action: "open-note-in-tab" });
+		//sections.push(BbMenuSection { label: None, items: sec0 });
 
 		let mut sec1 = vec![];
 		sec1.push(BbMenuItem { label: "Create Note", action: "create-note" });
 		sections.push(BbMenuSection { label: None, items: sec1 });
 
 		let mut sec2 = vec![];
-		sec2.push(BbMenuItem { label: "Duplicate Note", action: "duplicate-note" });
-		sec2.push(BbMenuItem { label: "Pin / Unpin Note", action: "toggle-pin-note" });
+		//sec2.push(BbMenuItem { label: "Duplicate Note", action: "duplicate-note" });
+		//sec2.push(BbMenuItem { label: "Pin / Unpin Note", action: "toggle-pin-note" });
 		sec2.push(BbMenuItem { label: "Rename Note", action: "rename-note" });
 		sections.push(BbMenuSection { label: None, items: sec2 });
 
