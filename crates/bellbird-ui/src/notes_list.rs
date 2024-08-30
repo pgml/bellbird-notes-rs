@@ -182,8 +182,7 @@ impl<'a> NotesList {
 						}
 
 						self_clone.set_selected_ctx_note(path.clone().into());
-						println!("{:?}", path);
-						if should_activate_on_note_items {
+						if !path.as_os_str().is_empty() && should_activate_on_note_items {
 							for action in actions.iter() {
 								app_clone.action_enabled_changed(action, true);
 							}

@@ -234,8 +234,8 @@ impl<'a> DirectoryTree {
 				}
 
 				self_clone.set_selected_ctx_note(directory_path.clone().into());
-				println!("{:?}", directory_path);
-				if should_activate_on_folder_items {
+				//println!("{:?}", directory_path);
+				if !directory_path.as_os_str().is_empty() && should_activate_on_folder_items {
 					for action in actions.iter() {
 						app_clone.action_enabled_changed(action, true);
 					}
