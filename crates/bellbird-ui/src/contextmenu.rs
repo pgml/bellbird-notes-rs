@@ -3,6 +3,7 @@ use gtk::prelude::*;
 use gtk::gio;
 
 pub mod notes_list_context_menu;
+pub mod directory_tree_context_menu;
 
 #[derive(Debug, Clone)]
 pub struct BbMenuSection<'a> {

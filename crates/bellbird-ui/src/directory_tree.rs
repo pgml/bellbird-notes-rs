@@ -11,6 +11,7 @@ use bellbird_core::config::{
 };
 
 use bellbird_core::directories::Directories;
+use crate::contextmenu::{BbMenuItem, BbMenuSection, ContextMenu};
 use crate::directory_tree_row::DirectoryTreeRow;
 
 #[derive(Debug, Clone)]
@@ -25,6 +26,7 @@ pub struct DirectoryTree {
 	pub model: gio::ListStore,
 	pub list_view: gtk::ListView,
 	pub current_directory: Rc<RefCell<PathBuf>>,
+	pub selected_ctx_path: Rc<RefCell<PathBuf>>,
 }
 
 impl<'a> DirectoryTree {
@@ -78,7 +80,6 @@ impl<'a> DirectoryTree {
 			.single_click_activate(true)
 			.build();
 
-		let current_directory = Rc::new(RefCell::new(path.to_path_buf()));
 		list_view.connect_activate(move |list_view, position| {
 			let model = list_view.model().unwrap();
 			let tree_item = model.item(position).and_downcast::<gtk::Label>().unwrap();
@@ -101,7 +102,8 @@ impl<'a> DirectoryTree {
 			path: path.to_path_buf(),
 			model,
 			list_view,
-			current_directory,
+			current_directory: Rc::new(RefCell::new(path.to_path_buf())),
+			selected_ctx_path: Rc::new(RefCell::new(path.to_path_buf())),
 		}
 	}
 
@@ -110,6 +112,10 @@ impl<'a> DirectoryTree {
 		self.model.remove_all();
 		self.append_to_model(&path);
 		self.set_selection();
+	}
+
+	pub fn refresh(&mut self) {
+		self.update_path(self.path.clone());
 	}
 
 	fn append_to_model(&self, path: &Path) {
@@ -167,9 +173,83 @@ impl<'a> DirectoryTree {
 			}
 		}
 	}
+
+	pub fn set_selected_ctx_note(&self, path: PathBuf) {
+		self.selected_ctx_path.borrow_mut().set_file_name(path);
+	}
+
+	fn build_context_menu(&self, app: &adw::Application) {
+		let mut sections = vec![];
+		//let mut sec0 = vec![];
+		//sec0.push(BbMenuItem { label: "Open in New Tab", action: "open-note-in-tab" });
+		//sections.push(BbMenuSection { label: None, items: sec0 });
+
+		let mut sec1 = vec![];
+		sec1.push(BbMenuItem { label: "Create Folder", action: "create-folder" });
+		sections.push(BbMenuSection { label: None, items: sec1 });
+
+		let mut sec2 = vec![];
+		//sec2.push(BbMenuItem { label: "Duplicate Folder", action: "duplicate-folder" });
+		//sec2.push(BbMenuItem { label: "Pin / Unpin Folder", action: "toggle-pin-folder" });
+		sec2.push(BbMenuItem { label: "Rename Folder", action: "rename-folder" });
+		sections.push(BbMenuSection { label: None, items: sec2 });
+
+		let mut sec3 = vec![];
+		sec3.push(BbMenuItem { label: "Delete Folder", action: "delete-folder" });
+		sections.push(BbMenuSection { label: None, items: sec3 });
+
+		let app_clone = app.clone();
+		let self_clone = self.clone();
+
+		ContextMenu::new(sections, &self.list_view, 180).build(move |widget| {
+			let actions = vec![
+				"open-folder-in-tab",
+				"duplicate-folder",
+				"toggle-pin-folder",
+				"rename-folder",
+				"delete-folder"
+			];
+			for action in actions.iter() {
+				app_clone.action_enabled_changed(action, false);
+			}
+
+			if widget.widget_name() != "GtkListView" {
+				#[allow(unused)]
+				let mut should_activate_on_folder_items = false;
+				let mut directory_path = PathBuf::from("");
+
+				if widget.widget_name() == "DirectoryTreeRow" {
+					should_activate_on_folder_items = true;
+					if let Some(label) = widget.first_child().unwrap().last_child().and_downcast::<gtk::Label>() {
+						directory_path.push(label.label());
+					}
+				}
+				else {
+					should_activate_on_folder_items = true;
+					if let Some(parent) = widget.parent() {
+						if let Some(label) = parent.last_child().and_downcast::<gtk::Label>() {
+							directory_path.push(label.label());
+						}
+					}
+				}
+
+				self_clone.set_selected_ctx_note(directory_path.clone().into());
+				println!("{:?}", directory_path);
+				if should_activate_on_folder_items {
+					for action in actions.iter() {
+						app_clone.action_enabled_changed(action, true);
+					}
+				}
+			}
+		});
+	}
 }
 
-pub fn build_ui(directory_tree: &Rc<RefCell<DirectoryTree>>) -> gtk::Box {
+
+pub fn build_ui(
+	app: &adw::Application,
+	directory_tree: &Rc<RefCell<DirectoryTree>>
+) -> gtk::Box {
 	let directory_panel = gtk::Box::builder()
 		.orientation(gtk::Orientation::Vertical)
 		.vexpand(true)
@@ -192,6 +272,8 @@ pub fn build_ui(directory_tree: &Rc<RefCell<DirectoryTree>>) -> gtk::Box {
 		.child(directory_tree.borrow_mut().view())
 		.hscrollbar_policy(gtk::PolicyType::External)
 		.build();
+
+	directory_tree.borrow_mut().build_context_menu(app);
 
 	//let handle_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
 	//handle_box.append(&gtk::WindowControls::new(gtk::PackType::Start));

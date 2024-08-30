@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::{fs, path::{Path, PathBuf}};
 use anyhow::Result;
 
 use directories::UserDirs;
@@ -109,6 +109,53 @@ impl Directories {
 		}
 		else {
 			false
+		}
+	}
+
+	pub fn create(path: &Path) -> bool
+	{
+		if path.exists() {
+			return false
+		}
+
+		match fs::create_dir(path) {
+			Ok(_) => true,
+			Err(e) => {
+				println!("Couldn't create folder `{:?}` - {}", path, e.to_string());
+				false
+			},
+		}
+	}
+
+	pub fn rename(old_path: &Path, new_path: &Path) -> bool {
+		return match fs::rename(old_path, new_path) {
+			Ok(()) => true,
+			Err(e) => {
+				println!("{}", e);
+				false
+			}
+		}
+	}
+
+	pub fn delete(path: &Path, mut delete_files: bool) -> bool
+	{
+		if !delete_files {
+			delete_files = false
+		}
+
+		//remove_section(&path, true);
+
+		if !delete_files {
+			match fs::remove_dir(path) {
+				Ok(_) => true,
+				Err(_e) => false,
+			}
+		}
+		else {
+			match fs::remove_dir_all(path) {
+				Ok(_) => true,
+				Err(_e) => false,
+			}
 		}
 	}
 }

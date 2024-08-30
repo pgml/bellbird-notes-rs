@@ -136,8 +136,6 @@ impl<'a> Dialogue<'a> {
 
 		let window_clone = self.window.clone();
 		ok_button.connect_clicked(move |_button| {
-			let path = std::path::PathBuf::from("/home/rico/.bellbird-notes-snapshot/Arbeit/");
-			let _ = _button.activate_action("app.refresh-notes", Some(&path.to_variant()));
 			ok();
 			window_clone.close();
 		});

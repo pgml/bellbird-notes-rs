@@ -154,6 +154,7 @@ impl<'a> NotesList {
 				"rename-note",
 				"delete-note"
 			];
+
 			for action in actions.iter() {
 				app_clone.action_enabled_changed(action, false);
 			}
@@ -163,25 +164,25 @@ impl<'a> NotesList {
 					Some(parent) => {
 						#[allow(unused)]
 						let mut should_activate_on_note_items = false;
-						let mut note_path = PathBuf::from("");
+						let mut path = PathBuf::from("");
 
 						if parent.widget_name() == "NotesListRow" {
 							should_activate_on_note_items = true;
 							if let Some(label) = parent.last_child().and_downcast::<gtk::Label>() {
-								note_path.push(label.label());
+								path.push(label.label());
 							}
 						}
 						else {
 							should_activate_on_note_items = true;
 							if let Some(first_child) = parent.first_child() {
 								if let Some(label) = first_child.last_child().and_downcast::<gtk::Label>() {
-									note_path.push(label.label());
+									path.push(label.label());
 								}
 							}
 						}
 
-						self_clone.set_selected_ctx_note(note_path.clone().into());
-						println!("{:?}", note_path);
+						self_clone.set_selected_ctx_note(path.clone().into());
+						println!("{:?}", path);
 						if should_activate_on_note_items {
 							for action in actions.iter() {
 								app_clone.action_enabled_changed(action, true);

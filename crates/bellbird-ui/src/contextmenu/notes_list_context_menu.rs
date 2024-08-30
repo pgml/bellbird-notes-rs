@@ -1,9 +1,9 @@
-use std::{cell::RefCell, path::{Path, PathBuf}, rc::Rc, sync::Arc};
+use std::{cell::RefCell, path::PathBuf, rc::Rc, sync::Arc};
 
 use bellbird_core::notes::Notes;
 use gtk::{gio, prelude::*};
 
-use crate::{dialogue::Dialogue, notes_list::{self, NotesList}};
+use crate::{dialogue::Dialogue, notes_list::NotesList};
 
 #[derive(Debug, Clone)]
 pub struct NotesListContextMenu {
@@ -13,11 +13,11 @@ pub struct NotesListContextMenu {
 
 impl NotesListContextMenu {
 	pub fn new(
-		app: adw::Application,
+		app: &adw::Application,
 		notes_list: Rc<RefCell<NotesList>>
 	) -> Self {
 		Self {
-			app,
+			app: app.clone(),
 			notes_list
 		}
 	}
@@ -92,7 +92,7 @@ impl NotesListContextMenu {
 					                           .path.to_str().unwrap_or(""));
 				new_path.push(&note);
 				let old_path = PathBuf::from(&note_path);
-				Notes::rename_file(old_path, new_path);
+				Notes::rename(old_path, new_path);
 				notes_list_clone.borrow_mut().refresh();
 			},
 			|| {}
@@ -112,7 +112,7 @@ impl NotesListContextMenu {
 			"Do you really want to delete this note?",
 			&format!("´{}´", file_stem),
 			move || {
-				Notes::delete_file(&PathBuf::from(&note_path));
+				Notes::delete(&PathBuf::from(&note_path));
 				notes_list_clone.borrow_mut().refresh();
 			},
 			|| {}

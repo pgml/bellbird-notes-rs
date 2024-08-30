@@ -62,7 +62,7 @@ impl<'a> Notes {
 		}
 	}
 
-	pub fn rename_file(mut old_path: PathBuf, mut new_path: PathBuf) -> bool {
+	pub fn rename(mut old_path: PathBuf, mut new_path: PathBuf) -> bool {
 		old_path = Self::ensure_correct_path(&old_path);
 		new_path = Self::ensure_correct_path(&new_path);
 		return match fs::rename(old_path, new_path) {
@@ -74,14 +74,14 @@ impl<'a> Notes {
 		}
 	}
 
-	pub fn delete_file(path: &Path) -> bool {
+	pub fn delete(path: &Path) -> bool {
 		match fs::remove_file(path) {
 			Ok(_) => true,
 			Err(_e) => false,
 		}
 	}
 
-	pub fn current_note_path() -> PathBuf {
+	pub fn current_path() -> PathBuf {
 		let config = Config::new();
 		let mut value = config.value(
 			ConfigSections::General,
@@ -91,7 +91,7 @@ impl<'a> Notes {
 		PathBuf::from(value)
 	}
 
-	pub fn set_current_note_path(path: &Path) {
+	pub fn set_current_path(path: &Path) {
 		Config::new().set_value(
 			ConfigSections::General,
 			ConfigOptions::CurrentNote,

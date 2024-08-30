@@ -10,6 +10,7 @@ use bellbird_core::config::Config;
 use bellbird_core::notes::Notes;
 
 use crate::action_entries::ActionEntries;
+use crate::contextmenu::directory_tree_context_menu::DirectoryTreeContextMenu;
 use crate::contextmenu::notes_list_context_menu::NotesListContextMenu;
 use crate::directory_tree::DirectoryTree;
 use crate::editor_view::Editor;
@@ -54,7 +55,7 @@ fn build_ui(app: &adw::Application) {
 
 	let bellbird_root = Directories::root_directory();
 	let path = Directories::current_directory_path();
-	let note_path = Notes::current_note_path();
+	let note_path = Notes::current_path();
 	let directory_tree = Rc::new(RefCell::new(DirectoryTree::new(&bellbird_root)));
 	let notes_list = Rc::new(RefCell::new(NotesList::new(&path)));
 	let editor = Rc::new(RefCell::new(Editor::new(&note_path)));
@@ -67,8 +68,8 @@ fn build_ui(app: &adw::Application) {
 
 	register_actions(app, &directory_tree, &notes_list, &editor);
 
-	panels_wrapper.append(&directory_tree::build_ui(&directory_tree));
-	panels_wrapper.append(&notes_list::build_ui(&app.clone(), &notes_list));
+	panels_wrapper.append(&directory_tree::build_ui(&app, &directory_tree));
+	panels_wrapper.append(&notes_list::build_ui(&app, &notes_list));
 	panels_wrapper.append(&editor_view::build_ui(&editor));
 
 	window_box.append(&panels_wrapper);
@@ -93,11 +94,11 @@ fn register_actions(
 	notes_list: &Rc<RefCell<NotesList>>,
 	editor: &Rc<RefCell<Editor>>,
 ) {
-	let notes_list_context_menu = Arc::new(NotesListContextMenu::new(
-		app.clone(),
-		notes_list.clone()
-	));
-	notes_list_context_menu.setup_context_menu_actions();
+	Arc::new(NotesListContextMenu::new(app, notes_list.clone()))
+		.setup_context_menu_actions();
+
+	Arc::new(DirectoryTreeContextMenu::new(app, directory_tree.clone()))
+		.setup_context_menu_actions();
 
 	let action_entries = ActionEntries::new(
 		&app,
