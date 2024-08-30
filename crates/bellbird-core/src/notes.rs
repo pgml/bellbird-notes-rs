@@ -55,18 +55,17 @@ impl<'a> Notes {
 	}
 
 	pub fn write_to_file(mut path: PathBuf, content: String) -> bool {
-		let path_ = path.to_str().unwrap();
-
-		if let Some(extension) = path.extension() {
-			if extension != NOTES_EXTENSION {
+		path = match path.extension() {
+			Some(_) => path,
+			None => {
 				let path_with_extension = format!(
 					"{}.{}",
-					path_,
+					path.to_str().unwrap(),
 					NOTES_EXTENSION
 				);
-				path = PathBuf::from(path_with_extension);
+				PathBuf::from(path_with_extension)
 			}
-		}
+		};
 
 		match fs::write(path, content) {
 			Ok(_) => true,
