@@ -84,7 +84,7 @@ impl DirectoryTreeContextMenu {
 		let directory_tree_clone = self.directory_tree.clone();
 		let dialogue = Dialogue::new(&self.app);
 		let pathbuf_rc = self.directory_tree.borrow_mut().selected_ctx_path.clone();
-		let (directory_path, file_stem) = self.get_path_and_stem(&pathbuf_rc);
+		let (full_path, _, file_stem) = self.get_path_and_stem(&pathbuf_rc);
 		dialogue.input(
 			"Rename Folder",
 			&format!("Rename ´{}´ to:", file_stem),
@@ -93,7 +93,7 @@ impl DirectoryTreeContextMenu {
 				let mut new_path = PathBuf::from(directory_tree_clone.borrow_mut()
 					                           .path.to_str().unwrap_or(""));
 				new_path.push(&folder);
-				let old_path = PathBuf::from(&directory_path);
+				let old_path = PathBuf::from(&full_path);
 				Directories::rename(&old_path, &new_path);
 				directory_tree_clone.borrow_mut().refresh();
 			},
@@ -108,24 +108,26 @@ impl DirectoryTreeContextMenu {
 		let directory_tree_clone = self.directory_tree.clone();
 		let dialogue = Dialogue::new(&app_clone);
 		let pathbuf_rc = self.directory_tree.borrow_mut().selected_ctx_path.clone();
-		let (directory_path, file_stem) = self.get_path_and_stem(&pathbuf_rc);
+		let (full_path, directory_path, _) = self.get_path_and_stem(&pathbuf_rc);
 		dialogue.warning_yes_no(
 			"Delete Folder",
 			"Do you really want to delete this folder?\n(Note: its content will also be deleted)",
-			&format!("´{}´", file_stem),
+			&format!("´{}´", directory_path),
 			move || {
-				Directories::delete(&PathBuf::from(&directory_path), true);
+				Directories::delete(&PathBuf::from(&full_path), true);
 				directory_tree_clone.borrow_mut().refresh();
 			},
 			|| {}
 		)
 	}
 
-	fn get_path_and_stem(&self, path: &Rc<RefCell<PathBuf>>) -> (String, String) {
+	fn get_path_and_stem(&self, path: &Rc<RefCell<PathBuf>>) -> (String, String,  String) {
 		let directory_path = path.borrow_mut();
 		let file_stem = directory_path.file_stem().unwrap()
 			              .to_str().unwrap().to_string();
-		let directory_path = directory_path.display().to_string();
-		(directory_path, file_stem)
+		let bellbird_root = Directories::root_directory().display().to_string();
+		let full_path = directory_path.display().to_string();
+		let directory_path = full_path.replace(&bellbird_root, "");
+		(full_path, directory_path, file_stem)
 	}
 }
