@@ -12,17 +12,15 @@ text {
 	border-radius: 4px;
 }
 
-.dialogue {
-	border-top: 0;
+popover contents { border-radius: 5px; }
+popover modelbutton {
+	min-height: 27px;
+	padding-left: 28px;
 }
 
-.dialogue .button {
-	background-color: #FEFEFE;
-}
-
-.dialogue button label {
-	font-weight: 400;
-}
+.dialogue { border-top: 0; }
+.dialogue .button { background-color: #FEFEFE; }
+.dialogue button label { font-weight: 400; }
 
 windowcontrols button {
 	-gtk-icon-size: 12px;
@@ -33,9 +31,7 @@ windowcontrols button {
 	padding-left: 8px;
 }
 
-windowcontrols button:nth-child(2) {
-	padding-left: 2px;
-}
+windowcontrols button:nth-child(2) { padding-left: 2px; }
 
 headerbar {
 	background-color: #f0f0f0;
@@ -59,13 +55,8 @@ windowhandle label {
 	padding: 0 10px;
 }
 
-.directories-panel row {
-	border-radius: 4px;
-}
-
-.directories-panel treeexpander.hide {
-	opacity: 0;
-}
+.directories-panel row { border-radius: 4px; }
+.directories-panel treeexpander.hide { opacity: 0; }
 
 .notes-panel {
 	border-radius: 4px;
@@ -74,9 +65,7 @@ windowhandle label {
 	border: 1px solid #EDEDED;
 }
 
-.notes-panel listview {
-	padding: 0 5px;
-}
+.notes-panel listview { padding: 0 5px; }
 
 .notes-panel > label {
 	text-transform: uppercase;
