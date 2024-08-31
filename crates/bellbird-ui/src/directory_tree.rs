@@ -22,6 +22,7 @@ pub struct TreeItem<'a> {
 
 #[derive(Debug, Clone)]
 pub struct DirectoryTree {
+	pub app: adw::Application,
 	pub path: PathBuf,
 	pub model: gio::ListStore,
 	pub list_view: gtk::ListView,
@@ -30,7 +31,10 @@ pub struct DirectoryTree {
 }
 
 impl<'a> DirectoryTree {
-	pub fn new(path: &'a Path) -> Self {
+	pub fn new(
+		app: &'a adw::Application,
+		path: &'a Path
+	) -> Self {
 		let model = gio::ListStore::new::<gtk::Label>();
 		let model_clone = model.clone();
 		let config = Config::new();
@@ -49,6 +53,7 @@ impl<'a> DirectoryTree {
 			item.set_child(Some(&row));
 		});
 
+		let app_clone = app.clone();
 		factory.connect_bind(move |_factory, item| {
 			let item = item.downcast_ref::<gtk::ListItem>().unwrap();
 			item.set_selectable(false);
@@ -56,15 +61,16 @@ impl<'a> DirectoryTree {
 			let child = item.child().and_downcast::<DirectoryTreeRow>().unwrap();
 			let dir_name = &label.label();
 			let path = PathBuf::from(label.widget_name());
-			//let depth_from_root = Directories::get_depth_from_root(&path);
+			let depth_from_root = Directories::get_depth_from_root(&path);
+			let has_children = Directories::dir_has_children(&path);
 
-			//let has_children = Directories::dir_has_children(&path);
 			child.append_tree_item(
+				&app_clone,
 				&TreeItem { name: dir_name, path },
 				//&dir_name,
 				//&path,
-				//depth_from_root,
-				//has_children
+				depth_from_root,
+				has_children
 			);
 		});
 
@@ -99,6 +105,7 @@ impl<'a> DirectoryTree {
 		});
 
 		Self {
+			app: app.clone(),
 			path: path.to_path_buf(),
 			model,
 			list_view,
@@ -137,6 +144,7 @@ impl<'a> DirectoryTree {
 					.label(&dir_name)
 					.name(&path)
 					.build();
+
 				self.model.append(&label);
 				//self.append_to_model(&directory.path);
 			})
@@ -186,11 +194,12 @@ impl<'a> DirectoryTree {
 
 		let mut sec1 = vec![];
 		sec1.push(BbMenuItem { label: "Create Folder", action: "create-folder" });
+		//sec1.push(BbMenuItem { label: "Create Sub Folder", action: "create-sub-folder" });
 		sections.push(BbMenuSection { label: None, items: sec1 });
 
 		let mut sec2 = vec![];
 		//sec2.push(BbMenuItem { label: "Duplicate Folder", action: "duplicate-folder" });
-		//sec2.push(BbMenuItem { label: "Pin / Unpin Folder", action: "toggle-pin-folder" });
+		sec2.push(BbMenuItem { label: "Pin / Unpin Folder", action: "toggle-pin-folder" });
 		sec2.push(BbMenuItem { label: "Rename Folder", action: "rename-folder" });
 		sections.push(BbMenuSection { label: None, items: sec2 });
 

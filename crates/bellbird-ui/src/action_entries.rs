@@ -61,7 +61,7 @@ impl<'a> ActionEntries<'a> {
 				let path = parameter
 					.expect("Could not get Parameter")
 					.get::<String>()
-					.expect("The variant nees to be of type `String`");
+					.expect("The variant needs to be of type `String`");
 				notes_list_clone.borrow_mut().update_current_note(path.clone().into());
 				editor_clone.borrow_mut().update_path(path.into());
 			})

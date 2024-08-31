@@ -79,7 +79,7 @@ impl NotesListContextMenu {
 	}
 
 	fn rename_note(&self) {
-		let notes_list_clone = self.notes_list.clone();
+		let notes_list = self.notes_list.clone();
 		let dialogue = Dialogue::new(&self.app);
 		let pathbuf_rc = self.notes_list.borrow_mut().selected_ctx_path.clone();
 		let (note_path, file_stem) = self.get_path_and_stem(&pathbuf_rc);
@@ -88,12 +88,12 @@ impl NotesListContextMenu {
 			&format!("Rename ´{}´ to:", file_stem),
 			&file_stem,
 			move |note| {
-				let mut new_path = PathBuf::from(notes_list_clone.borrow_mut()
+				let mut new_path = PathBuf::from(notes_list.borrow_mut()
 					                           .path.to_str().unwrap_or(""));
 				new_path.push(&note);
 				let old_path = PathBuf::from(&note_path);
 				Notes::rename(old_path, new_path);
-				notes_list_clone.borrow_mut().refresh();
+				notes_list.borrow_mut().refresh();
 			},
 			|| {}
 		)

@@ -50,6 +50,11 @@ windowhandle label {
 	color: #A5A1BC;
 }
 
+.directories-tree .tree-row-wrapper.hide {
+	display: none;
+	height: 0;
+}
+
 .directories-panel listview {
 	background-color: transparent;
 	padding: 0 10px;
