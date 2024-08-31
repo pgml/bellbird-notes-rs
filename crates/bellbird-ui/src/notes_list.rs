@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
+use bellbird_core::config::{Config, ConfigOptions, ConfigSections};
 use bellbird_core::notes::Notes;
 
 use gtk::gio;
@@ -23,6 +24,7 @@ impl<'a> NotesList {
 	pub fn new(path: &'a Path) -> Self {
 		let model = gio::ListStore::new::<gtk::Label>();
 		let model_clone = model.clone();
+		let config = Config::new();
 
 		let factory = gtk::SignalListItemFactory::new();
 		factory.connect_setup(move |_factory, item| {
@@ -59,6 +61,12 @@ impl<'a> NotesList {
 			let label = model.item(position).and_downcast::<gtk::Label>().unwrap();
 			let path = label.widget_name();
 			model.select_item(position, true);
+
+			config.set_value(
+				ConfigSections::General,
+				ConfigOptions::CurrentNote,
+				path.to_string()
+			);
 
 			list_view
 				.activate_action("app.open-note", Some(&path.to_variant()))
@@ -134,8 +142,8 @@ impl<'a> NotesList {
 		sections.push(BbMenuSection { label: None, items: sec1 });
 
 		let mut sec2 = vec![];
-		//sec2.push(BbMenuItem { label: "Duplicate Note", action: "duplicate-note" });
-		//sec2.push(BbMenuItem { label: "Pin / Unpin Note", action: "toggle-pin-note" });
+		sec2.push(BbMenuItem { label: "Duplicate Note", action: "duplicate-note" });
+		sec2.push(BbMenuItem { label: "Pin / Unpin Note", action: "toggle-pin-note" });
 		sec2.push(BbMenuItem { label: "Rename Note", action: "rename-note" });
 		sections.push(BbMenuSection { label: None, items: sec2 });
 
