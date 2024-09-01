@@ -87,7 +87,7 @@ impl<'a> DirectoryTree {
 			let path = tree_item.widget_name();
 			model.select_item(position, true);
 
-			config.set_value(
+			let _ = config.set_value(
 				ConfigSections::General,
 				ConfigOptions::CurrentDirectory,
 				path.to_string()
@@ -119,7 +119,7 @@ impl<'a> DirectoryTree {
 	}
 
 	fn append_to_model(&self, path: &Path) {
-		if let Ok(directories) = Directories::list(&path, 1) {
+		if let Some(directories) = Directories::list(&path, 1) {
 			directories.iter().for_each(|directory| {
 				let dir_name = directory.name.clone();
 				let path = directory.path.display().to_string();

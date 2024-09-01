@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use configparser::ini::Ini;
 use ::directories::BaseDirs;
 use regex::Regex;
+use anyhow::Result;
 
 pub enum ConfigSections {
 	General,
@@ -95,39 +96,43 @@ impl<'a> Config {
 		directory_name.to_lowercase()
 	}
 
-	fn config_dir(&self) -> PathBuf {
-		match BaseDirs::new() {
-			Some(base_dirs) => {
-				let os_config_dir = base_dirs.config_dir().display().to_string();
-				let app_config_dir = self.application_directory_name();
-				//OsStr::new(&format!("{os_config_dir}/{app_config_dir}")).into()
-				PathBuf::from(&format!("{os_config_dir}/{app_config_dir}"))
+	fn config_dir(&self) -> Result<PathBuf> {
+		if let Some(base_dirs) = BaseDirs::new() {
+			let os_config_dir = base_dirs.config_dir().display().to_string();
+			let app_config_dir = self.application_directory_name();
+			return Ok(PathBuf::from(&format!("{os_config_dir}/{app_config_dir}")))
+		}
+		Err(anyhow::anyhow!("Could not find config directory."))
+	}
+
+	pub fn config_file(&self, is_meta_info: bool) -> Result<PathBuf, anyhow::Error> {
+		match self.config_dir() {
+			Ok(config_dir) => {
+				if Path::new(&config_dir).is_dir() == false {
+					return Err(anyhow::anyhow!(
+						"Could not find config directory: {}",
+						config_dir.display().to_string()
+					));
+				}
+
+				let mut filename = self.application_directory_name();
+
+				if is_meta_info {
+					filename = format!("{filename}_metainfos");
+				}
+				else {
+					filename = format!("{filename}.conf");
+				}
+
+				let mut file_path = PathBuf::from(config_dir);
+				file_path.push(&filename);
+				return Ok(file_path)
 			},
-			None => PathBuf::new()
+			Err(e) => Err(e)
 		}
 	}
 
-	pub fn config_file(&self, is_meta_info: bool) -> PathBuf {
-		let binding = self.config_dir();
-		let config_dir = binding.as_path();
-
-		if Path::new(&config_dir).is_dir() == false {
-			return PathBuf::new();
-		}
-
-		let mut filename = self.application_directory_name();
-
-		if is_meta_info {
-			filename = format!("{filename}_metainfos");
-		}
-		else {
-			filename = format!("{filename}.conf");
-		}
-
-		let mut file_path = PathBuf::from(config_dir);
-		file_path.push(&filename);
-		file_path
-	}
+	//pub fn meta_infos_file(&self) ->
 
 	pub fn value(
 		&self,
@@ -135,26 +140,27 @@ impl<'a> Config {
 		option: ConfigOptions,
 		//is_meta_info: bool,
 		//file: &str
-	) -> String {
-		let config_file = self.config_file(false);
+	) -> Option<String> {
+		if let Ok(config_file) = self.config_file(false) {
+			let is_file = fs::metadata(&config_file)
+				.expect("Couldn't read...")
+				.is_file();
 
-		let is_file = fs::metadata(&config_file)
-			.expect("Couldn't read...")
-			.is_file();
-
-		if !Path::new(&config_file).exists() && !is_file {
-			return String::new();
-		}
-
-		let mut config = Ini::new_cs();
-		let mut config_value = String::new();
-
-		if let Ok(_) = config.load(&config_file) {
-			if let Some(value) = config.get(&section.as_str(), &option.as_str()) {
-				config_value = value.to_string();
+			if !Path::new(&config_file).exists() && !is_file {
+				return None
 			}
+
+			let mut config = Ini::new_cs();
+			let mut config_value = String::new();
+
+			if let Ok(_) = config.load(&config_file) {
+				if let Some(value) = config.get(&section.as_str(), &option.as_str()) {
+					config_value = value.to_string();
+				}
+			}
+			return Some(config_value)
 		}
-		config_value
+		None
 	}
 
 	pub fn set_value(
@@ -162,27 +168,15 @@ impl<'a> Config {
 		section: ConfigSections,
 		option: ConfigOptions,
 		value: String
-	) {
+	) -> Result<()> {
 		let mut config = Ini::new_cs();
-		let config_file = self.config_file(false);
-
-		match config.load(&config_file) {
-			Ok(_) => {
-				// read the existing config because it sometimes gets truncated
-				let outstring = config.writes();
-				let _ = config.read(outstring);
-				config.set(section.as_str(), option.as_str(), Some(value.clone()));
-				match config.write(&config_file) {
-					Ok(_) => true,
-					Err(e) => {
-						println!("{e}");
-						false
-					},
-				};
-			},
-			Err(e) => {
-				println!("{e}");
-			},
-		}
+		let config_file = self.config_file(false)?;
+		let _ = config.load(&config_file);
+		// read the existing config because it sometimes gets truncated
+		let outstring = config.writes();
+		let _ = config.read(outstring);
+		config.set(section.as_str(), option.as_str(), Some(value.clone()));
+		let _ = config.write(&config_file);
+		Ok(())
 	}
 }

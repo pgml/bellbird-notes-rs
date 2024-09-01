@@ -69,9 +69,9 @@ impl NotesListContextMenu {
 			"New note",
 			move |note| {
 				let mut path = PathBuf::from(notes_list_clone.borrow_mut()
-					                           .path.to_str().unwrap_or(""));
+					.path.to_str().unwrap_or(""));
 				path.push(&note);
-				Notes::write_to_file(path, String::new());
+				let _ = Notes::write_to_file(path, String::new());
 				notes_list_clone.borrow_mut().refresh();
 			},
 			|| {}
@@ -89,10 +89,10 @@ impl NotesListContextMenu {
 			&file_stem,
 			move |note| {
 				let mut new_path = PathBuf::from(notes_list_clone.borrow_mut()
-					                           .path.to_str().unwrap_or(""));
+					.path.to_str().unwrap_or(""));
 				new_path.push(&note);
 				let old_path = PathBuf::from(&note_path);
-				Notes::rename(old_path, new_path);
+				let _ = Notes::rename(old_path, new_path);
 				notes_list_clone.borrow_mut().refresh();
 			},
 			|| {}

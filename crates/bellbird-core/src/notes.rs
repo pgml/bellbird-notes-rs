@@ -54,23 +54,19 @@ impl<'a> Notes {
 		Ok(notes.into())
 	}
 
-	pub fn write_to_file(mut path: PathBuf, content: String) -> bool {
+	pub fn write_to_file(mut path: PathBuf, content: String) -> Result<()> {
 		path = Self::ensure_correct_path(&path);
-		match fs::write(path, content) {
-			Ok(_) => true,
-			Err(_) => false,
-		}
+		fs::write(path, content)?;
+		Ok(())
 	}
 
-	pub fn rename(mut old_path: PathBuf, mut new_path: PathBuf) -> bool {
+	pub fn rename(mut old_path: PathBuf, mut new_path: PathBuf) -> Result<bool> {
 		old_path = Self::ensure_correct_path(&old_path);
 		new_path = Self::ensure_correct_path(&new_path);
+
 		return match fs::rename(old_path, new_path) {
-			Ok(()) => true,
-			Err(e) => {
-				println!("{}", e);
-				false
-			}
+			Ok(()) => Ok(true),
+			Err(e) => Err(anyhow::anyhow!("Could not rename file: {}", e))
 		}
 	}
 
@@ -81,18 +77,22 @@ impl<'a> Notes {
 		}
 	}
 
-	pub fn current_path() -> PathBuf {
+	pub fn current_path() -> Option<PathBuf> {
 		let config = Config::new();
-		let mut value = config.value(
+		match config.value(
 			ConfigSections::General,
 			ConfigOptions::CurrentNote
-		);
-		value = value.replace("file://", "");
-		PathBuf::from(value)
+		) {
+			Some(value) => {
+				let current_note = value.replace("file://", "");
+				Some(PathBuf::from(current_note))
+			},
+			_ => None
+		}
 	}
 
 	pub fn set_current_path(path: &Path) {
-		Config::new().set_value(
+		let _  = Config::new().set_value(
 			ConfigSections::General,
 			ConfigOptions::CurrentNote,
 			path.display().to_string()

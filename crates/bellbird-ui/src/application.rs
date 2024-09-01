@@ -53,9 +53,9 @@ fn build_ui(app: &adw::Application) {
 	window.set_default_size(1000, 600);
 	window.set_child(Some(&window_box));
 
-	let bellbird_root = Directories::root_directory();
-	let path = Directories::current_directory_path();
-	let note_path = Notes::current_path();
+	let bellbird_root = Directories::bb_root_directory().unwrap_or("".into());
+	let path = Directories::current_directory_path().unwrap_or("".into());
+	let note_path = Notes::current_path().unwrap_or("".into());
 	let directory_tree = Rc::new(RefCell::new(DirectoryTree::new(&bellbird_root)));
 	let notes_list = Rc::new(RefCell::new(NotesList::new(&path)));
 	let editor = Rc::new(RefCell::new(Editor::new(&note_path)));

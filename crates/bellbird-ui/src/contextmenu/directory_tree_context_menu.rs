@@ -73,7 +73,7 @@ impl DirectoryTreeContextMenu {
 				let mut path = PathBuf::from(directory_tree_clone.borrow_mut()
 					                           .path.to_str().unwrap_or(""));
 				path.push(&folder);
-				Directories::create(&path);
+				let _ = Directories::create(&path);
 				directory_tree_clone.borrow_mut().refresh();
 			},
 			|| {}
@@ -94,7 +94,7 @@ impl DirectoryTreeContextMenu {
 					                           .path.to_str().unwrap_or(""));
 				new_path.push(&folder);
 				let old_path = PathBuf::from(&full_path);
-				Directories::rename(&old_path, &new_path);
+				let _ = Directories::rename(&old_path, &new_path);
 				directory_tree_clone.borrow_mut().refresh();
 			},
 			|| {}
@@ -114,7 +114,7 @@ impl DirectoryTreeContextMenu {
 			"Do you really want to delete this folder?\n(Note: its content will also be deleted)",
 			&format!("´{}´", directory_path),
 			move || {
-				Directories::delete(&PathBuf::from(&full_path), true);
+				let _ = Directories::delete(&PathBuf::from(&full_path), true);
 				directory_tree_clone.borrow_mut().refresh();
 			},
 			|| {}
@@ -124,8 +124,9 @@ impl DirectoryTreeContextMenu {
 	fn get_path_and_stem(&self, path: &Rc<RefCell<PathBuf>>) -> (String, String,  String) {
 		let directory_path = path.borrow_mut();
 		let file_stem = directory_path.file_stem().unwrap()
-			              .to_str().unwrap().to_string();
-		let bellbird_root = Directories::root_directory().display().to_string();
+			.to_str().unwrap().to_string();
+		let bellbird_root = Directories::bb_root_directory().unwrap_or("".into())
+			.display().to_string();
 		let full_path = directory_path.display().to_string();
 		let directory_path = full_path.replace(&bellbird_root, "");
 		(full_path, directory_path, file_stem)

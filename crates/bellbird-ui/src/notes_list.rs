@@ -62,7 +62,7 @@ impl<'a> NotesList {
 			let path = label.widget_name();
 			model.select_item(position, true);
 
-			config.set_value(
+			let _ = config.set_value(
 				ConfigSections::General,
 				ConfigOptions::CurrentNote,
 				path.to_string()
