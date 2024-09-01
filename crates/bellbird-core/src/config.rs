@@ -1,4 +1,3 @@
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use configparser::ini::Ini;
@@ -6,6 +5,7 @@ use ::directories::BaseDirs;
 use regex::Regex;
 use anyhow::Result;
 
+#[derive(Debug)]
 pub enum ConfigSections {
 	General,
 	SideBar,
@@ -15,7 +15,7 @@ pub enum ConfigSections {
 }
 
 impl ConfigSections {
-	fn as_str(&self) -> &str {
+	pub fn as_str(&self) -> &str {
 		match self {
 			ConfigSections::General => "General",
 			ConfigSections::SideBar => "SideBar",
@@ -26,6 +26,7 @@ impl ConfigSections {
 	}
 }
 
+#[derive(Debug)]
 pub enum ConfigOptions {
 	DefaultNotesDirectory,
 	UserNotesDirectory,
@@ -35,6 +36,7 @@ pub enum ConfigOptions {
 	OpenNotes,
 	Visible,
 	Width,
+	CaretPosition,
 }
 
 impl ConfigOptions {
@@ -48,6 +50,7 @@ impl ConfigOptions {
 			ConfigOptions::OpenNotes => "OpenNotes",
 			ConfigOptions::Visible => "Visible",
 			ConfigOptions::Width => "Width",
+			ConfigOptions::CaretPosition => "CaretPosition",
 		}
 	}
 }
@@ -132,21 +135,31 @@ impl<'a> Config {
 		}
 	}
 
-	//pub fn meta_infos_file(&self) ->
-
-	pub fn value(
+	pub fn meta_info(
 		&self,
-		section: ConfigSections,
+		section: &str,
 		option: ConfigOptions,
-		//is_meta_info: bool,
+	) -> Option<String> {
+		self.value(section, option, true)
+	}
+
+	pub fn config_value(
+		&self,
+		section: &str,
+		option: ConfigOptions,
+	) -> Option<String> {
+		self.value(section, option, false)
+	}
+
+	fn value(
+		&self,
+		section: &str,
+		option: ConfigOptions,
+		is_meta_info: bool,
 		//file: &str
 	) -> Option<String> {
-		if let Ok(config_file) = self.config_file(false) {
-			let is_file = fs::metadata(&config_file)
-				.expect("Couldn't read...")
-				.is_file();
-
-			if !Path::new(&config_file).exists() && !is_file {
+		if let Ok(config_file) = self.config_file(is_meta_info) {
+			if !Path::new(&config_file).exists() && !config_file.is_file() {
 				return None
 			}
 
@@ -154,7 +167,7 @@ impl<'a> Config {
 			let mut config_value = String::new();
 
 			if let Ok(_) = config.load(&config_file) {
-				if let Some(value) = config.get(&section.as_str(), &option.as_str()) {
+				if let Some(value) = config.get(&section, &option.as_str()) {
 					config_value = value.to_string();
 				}
 			}
@@ -163,19 +176,38 @@ impl<'a> Config {
 		None
 	}
 
-	pub fn set_value(
+	pub fn set_config_value(
 		&self,
-		section: ConfigSections,
+		section: &str,
 		option: ConfigOptions,
-		value: String
+		value: String,
+	) -> Result<()> {
+		self.set_value(section, option, value, false)
+	}
+
+	pub fn set_meta_value(
+		&self,
+		section: &str,
+		option: ConfigOptions,
+		value: String,
+	) -> Result<()> {
+		self.set_value(section, option, value, true)
+	}
+
+	fn set_value(
+		&self,
+		section: &str,
+		option: ConfigOptions,
+		value: String,
+		is_meta_info: bool
 	) -> Result<()> {
 		let mut config = Ini::new_cs();
-		let config_file = self.config_file(false)?;
+		let config_file = self.config_file(is_meta_info)?;
 		let _ = config.load(&config_file);
 		// read the existing config because it sometimes gets truncated
 		let outstring = config.writes();
 		let _ = config.read(outstring);
-		config.set(section.as_str(), option.as_str(), Some(value.clone()));
+		config.set(section, option.as_str(), Some(value.clone()));
 		let _ = config.write(&config_file);
 		Ok(())
 	}

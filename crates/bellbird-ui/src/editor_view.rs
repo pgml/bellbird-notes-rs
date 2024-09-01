@@ -1,7 +1,10 @@
 use std::rc::Rc;
 use std::path::{Path, PathBuf};
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
+//use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
+use bellbird_core::config::{Config, ConfigOptions};
 use bellbird_core::notes::Notes;
 use gtk::{gio, glib, prelude::*};
 use sourceview5::{
@@ -19,6 +22,7 @@ pub struct Editor {
 	pub buffer: Buffer,
 	pub editor_view: View,
 	pub editor_breadcrumb: Breadcrumb,
+	//file_finished_loading: Arc<Mutex<f32>>,
 }
 
 impl<'a> Editor {
@@ -55,11 +59,14 @@ impl<'a> Editor {
 		});
 		editor_view.add_controller(controller.clone());
 
+		//let file_finished_loading = Arc::new(Mutex::new(0.0));
+
 		Self {
 			path: path.to_path_buf(),
 			buffer,
 			editor_view,
 			editor_breadcrumb,
+			//file_finished_loading,
 		}
 	}
 
@@ -69,42 +76,114 @@ impl<'a> Editor {
 		let file = gio::File::for_path(path);
 		let file = sourceview5::File::builder().location(&file).build();
 		let loader = sourceview5::FileLoader::new(&buffer, &file);
-		//let _path_clone = path.to_string();
+		//let path_clone = path.display().to_string();
+
+		//let file_finished_loading = Arc::clone(&self.file_finished_loading);
 
 		loader.load_async_with_callback(
 			glib::Priority::default(),
 			gio::Cancellable::NONE,
 			move |_current_num_bytes, _total_num_bytes| {
-				// println!(
-				// 	"loading {:?}: {:?}",
-				// 	path_clone,
-				// 	(current_num_bytes as f32 / total_num_bytes as f32) * 100f32
-				// );
+				//let percentage = (current_num_bytes as f32 / total_num_bytes as f32) * 100f32;
+				//println!(
+				//	"loading {:?}: {:?}",
+				//	path_clone,
+				//	percentage
+				//);
+				//let mut finished = file_finished_loading.lock().unwrap();
+				//*finished = percentage;
 			},
-			|_res| {
-				// println!("loaded {:?}", res);
+			move |res| {
+				//println!("loaded {:?}", res);
+				//let mut finished = file_finished_loading.lock().unwrap();
+				//*finished = _res.unwrap();
+				//println!("{finished}");
 			}
 		);
+
+		//println!("{}", *file_finished_loading.lock().unwrap());
 
 		buffer
 	}
 
 	pub fn update_path(&mut self, path: PathBuf) {
-		// @todo: all this cloning makes me sick...
-		// try to handle this with lifetimes
 		self.path = path.clone();
 		let buffer = self.add_buffer(&path);
-		self.editor_view.set_buffer(Some(&buffer));
-		self.editor_breadcrumb = self.build_breadcrumb().clone();
-
 		// disable editor if no note is loaded to avoid
 		// writing into nothing
-		if self.path.exists() {
-			self.set_editor_editable(true);
+		//if self.path.exists() {
+		//	self.set_editor_editable(true);
+		//}
+		//else {
+		//	self.set_editor_editable(false);
+		//}
+
+		self.editor_view.set_buffer(Some(&buffer));
+		self.editor_breadcrumb = self.build_breadcrumb().clone();
+		self.editor_view.queue_draw();
+		self.place_cursor(&buffer);
+		self.editor_view.grab_focus();
+
+		let _ = self.write_caret_position_to_file(buffer);
+	}
+
+	fn caret_position(&self) -> Option<i32> {
+		match Config::new().meta_info(
+			&self.path.display().to_string(),
+			ConfigOptions::CaretPosition
+		) {
+			Some(position) => position.parse().ok(),
+			_ => None
 		}
-		else {
-			self.set_editor_editable(false);
+	}
+
+	// @todo make this work.
+	// I somehow need to call this method when the file has finished loading
+	fn place_cursor(&self, buffer: &Buffer) {
+		if let Some(cursor_position ) = self.caret_position() {
+			let start_iter = buffer.start_iter();
+			let buffer_length = buffer.text(&start_iter, &buffer.end_iter(), false).len() as i32;
+			let position = cursor_position.clamp(0, buffer_length);
+			let mut iter = buffer .start_iter();
+			iter.set_offset(position);
+			//println!("{:?} {:?} {:?}", cursor_position, position, buffer_length);
+			buffer.place_cursor(&iter);
 		}
+	}
+
+	fn write_caret_position_to_file(&self, buffer: Buffer) -> anyhow::Result<()> {
+		let typing_timeout: Rc<Cell<Option<glib::SourceId>>> = Rc::new(Cell::new(None));
+		let config = Config::new();
+
+		buffer.connect_cursor_position_notify({
+			let typing_timeout = typing_timeout.clone();
+			let path = self.path.clone();
+			move |buffer| {
+				if let Some(timeout_id) = typing_timeout.take() {
+					timeout_id.remove();
+				}
+
+				let timeout_id = glib::timeout_add_local(Duration::from_millis(500), {
+					let buffer = buffer.clone();
+					let typing_timeout = typing_timeout.clone();
+					let path = path.clone();
+					let config = config.clone();
+					move || {
+						let buffer = buffer.clone();
+						let _ = config.set_meta_value(
+							&path.display().to_string(),
+							ConfigOptions::CaretPosition,
+							buffer.cursor_position().to_string()
+						);
+						typing_timeout.set(None);
+						glib::ControlFlow::Break
+					}
+				});
+
+				typing_timeout.set(Some(timeout_id));
+			}
+		});
+		Ok(())
 	}
 
 	pub fn view(&self) -> &View {
@@ -133,7 +212,7 @@ impl<'a> Editor {
 		let buffer_clone = self.editor_view.buffer();
 		let buffer_start = buffer_clone.start_iter();
 		let buffer_end = buffer_clone.end_iter();
-		Notes::write_to_file(
+		let _ = Notes::write_to_file(
 			self.path.clone(),
 			buffer_clone.text(&buffer_start, &buffer_end, false).to_string()
 		);

@@ -55,9 +55,9 @@ impl Directories {
 			let mut root_dir = PathBuf::from(home_dir);
 
 			let config = Config::new();
-			let value = config.value(
-				ConfigSections::General,
-				ConfigOptions::UserNotesDirectory
+			let value = config.config_value(
+				ConfigSections::General.as_str(),
+				ConfigOptions::UserNotesDirectory,
 			).unwrap();
 
 			root_dir.push(value);
@@ -77,8 +77,8 @@ impl Directories {
 
 	pub fn current_directory_path() -> Option<PathBuf> {
 		let config = Config::new();
-		match config.value(
-			ConfigSections::General,
+		match config.config_value(
+			ConfigSections::General.as_str(),
 			ConfigOptions::CurrentDirectory
 		) {
 			Some(current_dir) => Some(PathBuf::from(current_dir)),
@@ -87,8 +87,8 @@ impl Directories {
 	}
 
 	pub fn set_current_directory_path(path: &Path) {
-		let _ = Config::new().set_value(
-			ConfigSections::General,
+		let _ = Config::new().set_config_value(
+			ConfigSections::General.as_str(),
 			ConfigOptions::CurrentDirectory,
 			path.display().to_string()
 		);

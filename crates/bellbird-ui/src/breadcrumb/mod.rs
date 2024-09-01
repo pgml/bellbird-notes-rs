@@ -35,10 +35,7 @@ impl Breadcrumb {
 	fn get_note_name(&self, path: &Path) -> String {
 		let mut note = String::new();
 		if path.is_file() {
-			note = path
-				.file_stem().unwrap()
-				.to_str().unwrap()
-				.to_string();
+			note = path .file_stem().unwrap().to_str().unwrap().to_string();
 		}
 		note
 	}

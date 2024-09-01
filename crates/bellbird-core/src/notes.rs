@@ -79,8 +79,8 @@ impl<'a> Notes {
 
 	pub fn current_path() -> Option<PathBuf> {
 		let config = Config::new();
-		match config.value(
-			ConfigSections::General,
+		match config.config_value(
+			ConfigSections::General.as_str(),
 			ConfigOptions::CurrentNote
 		) {
 			Some(value) => {
@@ -92,8 +92,8 @@ impl<'a> Notes {
 	}
 
 	pub fn set_current_path(path: &Path) {
-		let _  = Config::new().set_value(
-			ConfigSections::General,
+		let _  = Config::new().set_config_value(
+			ConfigSections::General.as_str(),
 			ConfigOptions::CurrentNote,
 			path.display().to_string()
 		);
