@@ -1,4 +1,4 @@
-use std::fs;
+use async_std::{fs, stream::StreamExt};
 use std::path::{Path, PathBuf};
 use anyhow::Result;
 
@@ -6,7 +6,7 @@ use crate::config::{Config, ConfigOptions, ConfigSections};
 
 const NOTES_EXTENSION: &str = "note";
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Note {
 	// pub id: i32,
 	pub name: String,
@@ -23,55 +23,57 @@ pub struct Note {
 pub struct Notes;
 
 impl<'a> Notes {
-	pub fn list(path: &Path) -> Result<Vec<Note>> {
-		let mut notes = Vec::new();
-
-		if !Path::new(path).exists() {
-			return Ok(notes);
+	pub async fn list(path: &Path) -> Result<Vec<Note>> {
+		if !path.exists() {
+			return Err(anyhow::anyhow!(
+				"Could not list file, path does not exist: {}",
+				path.display().to_string()
+			));
 		}
 
-		if let Ok(paths) = fs::read_dir(path) {
-			for path in paths {
-				let dir_entry = path?;
+		let mut notes: Vec<Note> = vec![];
 
-				if dir_entry.path().is_dir() {
-					continue
+		if let Ok(mut paths) = fs::read_dir(path).await {
+			while let Some(path) = paths.next().await {
+				if let Ok(dir_entry) = path {
+					if dir_entry.path().is_dir().await {
+						continue
+					}
+
+					let file_path = dir_entry.path().display().to_string();
+					let mut file_name = dir_entry.file_name();
+
+					file_name = Path::new(&file_name).with_extension("").into();
+
+					notes.push(Note {
+						name: file_name.to_str().unwrap().to_string(),
+						path: file_path.clone(),
+					});
 				}
-
-				let file_path = dir_entry.path().display().to_string();
-				let mut file_name = dir_entry.file_name();
-
-				file_name = Path::new(&file_name).with_extension("").into();
-
-				notes.push(Note {
-					name: file_name.to_str().unwrap().to_string(),
-					path: file_path.clone(),
-				});
 			}
 		}
 
-		notes.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-		Ok(notes.into())
+		Ok(notes)
 	}
 
-	pub fn write_to_file(mut path: PathBuf, content: String) -> Result<()> {
+	pub async fn write_to_file(mut path: PathBuf, content: String) -> Result<()> {
 		path = Self::ensure_correct_path(&path);
-		fs::write(path, content)?;
+		let _ = fs::write(path, content).await;
 		Ok(())
 	}
 
-	pub fn rename(mut old_path: PathBuf, mut new_path: PathBuf) -> Result<bool> {
+	pub async fn rename(mut old_path: PathBuf, mut new_path: PathBuf) -> Result<bool> {
 		old_path = Self::ensure_correct_path(&old_path);
 		new_path = Self::ensure_correct_path(&new_path);
 
-		return match fs::rename(old_path, new_path) {
+		return match fs::rename(old_path, new_path).await {
 			Ok(()) => Ok(true),
 			Err(e) => Err(anyhow::anyhow!("Could not rename file: {}", e))
 		}
 	}
 
-	pub fn delete(path: &Path) -> bool {
-		match fs::remove_file(path) {
+	pub async fn delete(path: &Path) -> bool {
+		match fs::remove_file(path).await {
 			Ok(_) => true,
 			Err(_e) => false,
 		}
@@ -111,5 +113,23 @@ impl<'a> Notes {
 				PathBuf::from(path_with_extension)
 			}
 		}
+	}
+
+	pub fn is_pinned(path: &Path) -> bool {
+		let config = Config::new();
+		let path = path.display().to_string();
+		match config.meta_info(&path, ConfigOptions::Pinned) {
+			Some(value) => value == "true",
+			None => false
+		}
+	}
+
+	pub fn set_is_pinned(path: &Path, is_pinned: bool) {
+		let is_pinned = if is_pinned == true { "true" } else { "false" };
+		let _  = Config::new().set_meta_value(
+			&path.display().to_string(),
+			ConfigOptions::Pinned,
+			is_pinned.to_string()
+		);
 	}
 }

@@ -37,6 +37,7 @@ pub enum ConfigOptions {
 	Visible,
 	Width,
 	CaretPosition,
+	Pinned,
 }
 
 impl ConfigOptions {
@@ -51,6 +52,7 @@ impl ConfigOptions {
 			ConfigOptions::Visible => "Visible",
 			ConfigOptions::Width => "Width",
 			ConfigOptions::CaretPosition => "CaretPosition",
+			ConfigOptions::Pinned => "Pinned",
 		}
 	}
 }

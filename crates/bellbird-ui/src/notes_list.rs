@@ -1,12 +1,15 @@
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 
 use bellbird_core::config::{Config, ConfigOptions, ConfigSections};
 use bellbird_core::notes::Notes;
 
-use gtk::gio;
+use glib::MainContext;
+use gtk::{gio, SignalListItemFactory};
 use gtk::prelude::*;
+//use sourceview5::subclass::view;
 
 use crate::contextmenu::{BbMenuItem, BbMenuSection, ContextMenu};
 use crate::notes_list_row::NotesListItem;
@@ -15,17 +18,120 @@ use crate::notes_list_row::NotesListItem;
 pub struct NotesList {
 	pub path: PathBuf,
 	pub model: gio::ListStore,
+	//pub model: (gio::ListStore, gio::ListStore),
 	pub list_view: gtk::ListView,
+	//pub list_view: (gtk::ListView, gtk::ListView),
 	pub current_note: Rc<RefCell<PathBuf>>,
 	pub selected_ctx_path: Rc<RefCell<PathBuf>>,
 }
 
 impl<'a> NotesList {
 	pub fn new(path: &'a Path) -> Self {
+		let factory = Self::create_list_view_factory();
+		let (list_view, model) = Self::create_list_view(
+			factory,
+			true,
+			gtk::Align::Fill
+		);
+
+		//let factory_pinned = Self::create_list_view_factory();
+		//let (list_view_pinned, model_pinned) = Self::create_list_view(
+		//	factory_pinned,
+		//	true,
+		//	gtk::Align::Start
+		//);
+
+		Self {
+			path: path.to_path_buf(),
+			//model: (model, model_pinned),
+			//list_view: (list_view, list_view_pinned),
+			model,
+			list_view,
+			current_note: Rc::new(RefCell::new(path.to_path_buf())),
+			selected_ctx_path: Rc::new(RefCell::new(path.to_path_buf())),
+		}
+	}
+
+	pub async fn update_path(&mut self, path: PathBuf) {
+		self.path = path.clone();
+		//let (model, model_pinned) = &self.model;
+		let model = &self.model;
+		//model_pinned.remove_all();
+
+		let this = self.clone();
+
+		MainContext::default().spawn_local(glib::clone!(
+			//#[strong] model, #[strong] model_pinned,
+			#[weak] model, #[strong] this,
+			async move {
+				if let Ok(notes) = Notes::list(&path).await {
+					model.remove_all();
+					notes.iter().for_each(|note| {
+						let path = note.path.clone();
+						let label = gtk::Label::builder()
+							.label(&note.name)
+							.name(&path)
+							.build();
+
+						//if Notes::is_pinned(&PathBuf::from(path)) {
+						//	//println!("{}", note.name);
+						//	model_pinned.append(&label);
+						//}
+						//else {
+						model.append(&label)
+						//}
+					});
+					this.set_selection();
+				}
+			}));
+	}
+
+	fn create_list_view(
+		factory: gtk::SignalListItemFactory,
+		vexpand: bool,
+		valign: gtk::Align,
+	) -> (gtk::ListView, gio::ListStore) {
 		let model = gio::ListStore::new::<gtk::Label>();
-		let model_clone = model.clone();
 		let config = Config::new();
 
+		let selection_model = gtk::MultiSelection::new(Some(model.clone()));
+		let list_view = gtk::ListView::builder()
+			.model(&selection_model)
+			.factory(&factory)
+			.vexpand(vexpand)
+			.valign(valign)
+			.margin_top(5)
+			.margin_bottom(5)
+			//.margin_start(5)
+			//.margin_end(5)
+			.single_click_activate(true)
+			.show_separators(true)
+			.build();
+
+		list_view.connect_activate(glib::clone!(
+			#[strong] config,
+			move |list_view, position| {
+				let model = list_view.model().unwrap();
+				let label = model.item(position).and_downcast::<gtk::Label>().unwrap();
+				let path = label.widget_name();
+				model.select_item(position, true);
+
+				let _ = config.set_config_value(
+					ConfigSections::General.as_str(),
+					ConfigOptions::CurrentNote,
+					path.to_string()
+				);
+
+				list_view
+					.activate_action("app.open-note", Some(&path.to_variant()))
+					.expect("The action `open-note` does not exist.");
+			}
+		));
+
+		(list_view, model)
+	}
+
+	fn create_list_view_factory() -> gtk::SignalListItemFactory {
 		let factory = gtk::SignalListItemFactory::new();
 		factory.connect_setup(move |_factory, item| {
 			let item = item.downcast_ref::<gtk::ListItem>().unwrap();
@@ -38,70 +144,15 @@ impl<'a> NotesList {
 			let label = item.item().and_downcast::<gtk::Label>().unwrap();
 			let child = item.child().and_downcast::<NotesListItem>().unwrap();
 			item.set_selectable(false);
+			//println!("{}", label.label());
 			child.append_tree_item(&label);
 		});
 
-		let selection_model = gtk::MultiSelection::new(Some(model_clone));
-
-		let list_view = gtk::ListView::builder()
-			.model(&selection_model)
-			.factory(&factory)
-			.vexpand(true)
-			.valign(gtk::Align::Fill)
-			.margin_top(5)
-			.margin_bottom(5)
-			//.margin_start(5)
-			//.margin_end(5)
-			.single_click_activate(true)
-			.show_separators(true)
-			.build();
-
-		list_view.connect_activate(move |list_view, position| {
-			let model = list_view.model().unwrap();
-			let label = model.item(position).and_downcast::<gtk::Label>().unwrap();
-			let path = label.widget_name();
-			model.select_item(position, true);
-
-			let _ = config.set_config_value(
-				ConfigSections::General.as_str(),
-				ConfigOptions::CurrentNote,
-				path.to_string()
-			);
-
-			list_view
-				.activate_action("app.open-note", Some(&path.to_variant()))
-				.expect("The action `open-note` does not exist.");
-		});
-
-		Self {
-			path: path.to_path_buf(),
-			model,
-			list_view,
-			current_note: Rc::new(RefCell::new(path.to_path_buf())),
-			selected_ctx_path: Rc::new(RefCell::new(path.to_path_buf())),
-		}
+		factory
 	}
 
-	pub fn update_path(&mut self, path: PathBuf) {
-		self.path = path.clone();
-		self.model.remove_all();
-
-		if let Ok(notes) =  Notes::list(&path) {
-			notes.iter().for_each(|note| {
-				let label = gtk::Label::builder()
-					.label(&note.name)
-					.name(&note.path)
-					.build();
-
-				self.model.append(&label)
-			})
-		}
-
-		self.set_selection();
-	}
-
-	pub fn refresh(&mut self) {
-		self.update_path(self.path.clone());
+	pub async fn refresh(&mut self) {
+		self.update_path(self.path.clone()).await;
 	}
 
 	pub fn update_current_note(&self, path: PathBuf) {
@@ -112,13 +163,20 @@ impl<'a> NotesList {
 		self.selected_ctx_path.borrow_mut().set_file_name(path);
 	}
 
+	//fn view(&self) -> (&gtk::ListView, &gtk::ListView) {
 	fn view(&self) -> &gtk::ListView {
-		&self.list_view
+		//let (list_view, list_view_pinned) = &self.list_view;
+		let list_view = &self.list_view;
+		//(&list_view, &list_view_pinned)
+		&list_view
 	}
 
 	fn set_selection(&self) {
 		let current_note = self.current_note.clone();
-		if let Some(selection_model) = self.list_view.model() {
+		//let (list_view, list_view_pinned) = &self.list_view;
+		let list_view = &self.list_view;
+
+		if let Some(selection_model) = list_view.model() {
 			for index in 0..selection_model.n_items() {
 				if let Some(item) = selection_model.item(index) {
 					let path = item.downcast::<gtk::Label>().unwrap().widget_name();
@@ -154,7 +212,9 @@ impl<'a> NotesList {
 		let app_clone = app.clone();
 		let self_clone = self.clone();
 
-		ContextMenu::new(sections, &self.list_view, 180).build(move |widget| {
+		//let (list_view, list_view_pinned) = &self.list_view;
+		let list_view = &self.list_view;
+		ContextMenu::new(sections, &list_view, 180).build(move |widget| {
 			let actions = vec![
 				"open-note-in-tab",
 				"duplicate-note",
@@ -230,24 +290,85 @@ pub fn build_ui(
 		.css_classes(["notes-panel"])
 		.build();
 
+	let notes_list = notes_list.borrow_mut();
+	//let (view, pinned_view) = notes_list.view();
+	let view = notes_list.view();
+
+	//let notes_view_pinned = create_list_view_wrapper(
+	//	"Pinned",
+	//	pinned_view,
+	//	false,
+	//	glib::clone!(
+	//		#[weak]
+	//		view,
+	//		move |wrapper, scrolled_window, _| {
+	//			//let (min_size, _) = view.preferred_size();
+	//			//wrapper.set_height_request(min_size.height());
+	//			//view.set_height_request(min_size.height());
+	//			//view.set_height_request(min_size.height());
+	//			//println!("{:?}", view.preferred_size());
+	//		}
+	//	)
+	//);
+	let notes_view = create_list_view_wrapper(
+		"Notes",
+		view,
+		true,
+		|_, _, _| {}
+	);
+
+	notes_list.build_context_menu(app);
+	//notes_panel.append(&notes_view_pinned);
+	notes_panel.append(&notes_view);
+	notes_panel
+}
+
+fn create_list_view_wrapper<F>(
+	label: &str,
+	view: &gtk::ListView,
+	vexpand: bool,
+	f: F
+) -> gtk::Box
+where
+	F: Fn(gtk::Box, gtk::ScrolledWindow, gtk::Label) + 'static + Clone
+{
 	let notes_panel_label = gtk::Label::builder()
-		.label("Notes")
+		.label(label)
 		.margin_start(10)
 		.margin_end(5)
 		.margin_top(5)
 		.margin_bottom(5)
 		.halign(gtk::Align::Start)
+		.valign(gtk::Align::Start)
 		.build();
 
 	let scrollable_window = gtk::ScrolledWindow::builder()
-		.child(notes_list.borrow_mut().view())
 		.hscrollbar_policy(gtk::PolicyType::External)
+		.child(view)
 		.build();
 
-	notes_list.borrow_mut().build_context_menu(app);
+	let wrapper = gtk::Box::builder()
+		.orientation(gtk::Orientation::Vertical)
+		.name(label.to_lowercase())
+		//.height_request(200)
+		//.vexpand(vexpand)
+		//.valign(gtk::Align::Fill)
+		.build();
 
-	notes_panel.append(&notes_panel_label);
-	notes_panel.append(&scrollable_window);
+	wrapper.append(&notes_panel_label);
+	wrapper.append(&scrollable_window);
 
-	notes_panel
+	//view.model().unwrap().connect_items_changed(glib::clone!(
+	//	#[weak]
+	//	wrapper,
+	//	#[weak]
+	//	scrollable_window,
+	//	#[weak]
+	//	notes_panel_label,
+	//	move |_model, _, _, _| {
+	//		f(wrapper.clone(), scrollable_window, notes_panel_label);
+	//	}
+	//));
+
+	wrapper
 }

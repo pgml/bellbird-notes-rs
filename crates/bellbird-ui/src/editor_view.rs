@@ -93,7 +93,7 @@ impl<'a> Editor {
 				//let mut finished = file_finished_loading.lock().unwrap();
 				//*finished = percentage;
 			},
-			move |res| {
+			move |_res| {
 				//println!("loaded {:?}", res);
 				//let mut finished = file_finished_loading.lock().unwrap();
 				//*finished = _res.unwrap();

@@ -25,6 +25,6 @@ impl NotesListItem {
 
 		imp.icon.set_resource(Some("/com/bellbird/notes/icons/note.svg"));
 		imp.name.set_text(&item_label.label());
-		imp.path.set_text(&item_label.widget_name())
+		imp.path.set_text(&item_label.widget_name());
 	}
 }
