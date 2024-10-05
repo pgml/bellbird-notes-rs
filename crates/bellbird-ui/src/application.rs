@@ -54,28 +54,30 @@ fn build_ui(app: &adw::Application) {
 	window.set_child(Some(&window_box));
 
 	let bellbird_root = Directories::bb_root_directory().unwrap_or("".into());
-	let path = Directories::current_directory_path().unwrap_or("".into());
-	let note_path = Notes::current_path().unwrap_or("".into());
+	let path = Directories::current_directory_path().unwrap();
+	let note_path = Notes::current_path().unwrap();
 	let directory_tree = Rc::new(RefCell::new(DirectoryTree::new(&bellbird_root)));
 	let notes_list = Rc::new(RefCell::new(NotesList::new(&path)));
 	let editor = Rc::new(RefCell::new(Editor::new(&note_path)));
 
+	directory_tree.borrow_mut().update_current_directory(path.clone().into());
+	directory_tree.borrow_mut().update_path(bellbird_root.to_path_buf());
+	notes_list.borrow_mut().update_current_note(note_path.clone().into());
+
 	glib::MainContext::default().spawn_local(glib::clone!(
-		#[strong] directory_tree, #[strong] notes_list, #[strong] editor,
+		#[weak] notes_list, #[strong] note_path, #[weak] editor,
 		async move {
-			directory_tree.borrow_mut().update_current_directory(path.clone().into());
-			directory_tree.borrow_mut().update_path(bellbird_root.to_path_buf());
-			notes_list.borrow_mut().update_current_note(note_path.clone().into());
 			notes_list.borrow_mut().update_path(path.to_path_buf().into()).await;
-			editor.borrow_mut().update_path(note_path.to_path_buf());
+			editor.borrow_mut().update_path(note_path.to_path_buf()).await;
 		}
 	));
 
-	register_actions(app, &directory_tree, &notes_list, &editor);
+	register_actions(&app, &directory_tree, &notes_list, &editor);
 
 	panels_wrapper.append(&directory_tree::build_ui(&app, &directory_tree));
 	panels_wrapper.append(&notes_list::build_ui(&app, &notes_list));
 	panels_wrapper.append(&editor_view::build_ui(&editor));
+
 
 	window_box.append(&panels_wrapper);
 

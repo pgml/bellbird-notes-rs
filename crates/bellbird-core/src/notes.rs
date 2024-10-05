@@ -12,7 +12,7 @@ pub struct Note {
 	pub name: String,
 	pub	path: String,
 	// pub	preview: String,
-	// pub is_pinned: bool,
+	pub is_pinned: bool,
 	// pub is_current: bool,
 	// pub is_loaded: bool,
 	// pub creation_date: String,
@@ -43,22 +43,29 @@ impl<'a> Notes {
 					let file_path = dir_entry.path().display().to_string();
 					let mut file_name = dir_entry.file_name();
 
+					//let is_pinned = Notes::is_pinned(
+					//	&PathBuf::from(file_path.clone())
+					//).await;
+					let is_pinned = false;
+
 					file_name = Path::new(&file_name).with_extension("").into();
 
 					notes.push(Note {
 						name: file_name.to_str().unwrap().to_string(),
 						path: file_path.clone(),
+						is_pinned
 					});
 				}
 			}
 		}
 
+		notes.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
 		Ok(notes)
 	}
 
-	pub async fn write_to_file(mut path: PathBuf, content: String) -> Result<()> {
+	pub fn write_to_file(mut path: PathBuf, content: String) -> Result<()> {
 		path = Self::ensure_correct_path(&path);
-		let _ = fs::write(path, content).await;
+		let _ = fs::write(path, content);
 		Ok(())
 	}
 
@@ -115,7 +122,7 @@ impl<'a> Notes {
 		}
 	}
 
-	pub fn is_pinned(path: &Path) -> bool {
+	pub fn is_pinned(path: &std::path::Path) -> bool {
 		let config = Config::new();
 		let path = path.display().to_string();
 		match config.meta_info(&path, ConfigOptions::Pinned) {

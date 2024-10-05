@@ -33,7 +33,6 @@ impl<'a> DirectoryTree {
 	pub fn new(path: &'a Path) -> Self {
 		let model = gio::ListStore::new::<gtk::Label>();
 		let model_clone = model.clone();
-		let config = Config::new();
 
 	  let factory = gtk::SignalListItemFactory::new();
 		factory.connect_setup(move |_factory, item| {
@@ -87,7 +86,7 @@ impl<'a> DirectoryTree {
 			let path = tree_item.widget_name();
 			model.select_item(position, true);
 
-			let _ = config.set_config_value(
+			let _ = Config::new().set_config_value(
 				ConfigSections::General.as_str(),
 				ConfigOptions::CurrentDirectory,
 				path.to_string()

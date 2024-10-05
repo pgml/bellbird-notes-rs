@@ -19,6 +19,7 @@ pub mod action_entries;
 pub mod contextmenu;
 pub mod menu;
 pub mod dialogue;
+pub mod notes_list_model_item;
 
 fn main() -> gtk::glib::ExitCode {
 	if let Err(e) = setup_gresources() {

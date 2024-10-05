@@ -9,6 +9,7 @@
 			<!-- templates -->
 			<file>ui/directory_tree_row.ui</file>
 			<file>ui/notes_list_row.ui</file>
+			<!-- <file>ui/notes_list_panel.ui</file> -->
 			<file>ui/breadcrumb.ui</file>
 		</gresource>
 </gresources>

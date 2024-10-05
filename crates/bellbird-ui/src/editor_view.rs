@@ -80,6 +80,7 @@ impl<'a> Editor {
 
 		//let file_finished_loading = Arc::clone(&self.file_finished_loading);
 
+		//loader.load_async(glib::Priority::default(), gio::Cancellable::NONE, move |_| {});
 		loader.load_async_with_callback(
 			glib::Priority::default(),
 			gio::Cancellable::NONE,
@@ -94,6 +95,7 @@ impl<'a> Editor {
 				//*finished = percentage;
 			},
 			move |_res| {
+
 				//println!("loaded {:?}", res);
 				//let mut finished = file_finished_loading.lock().unwrap();
 				//*finished = _res.unwrap();
@@ -106,7 +108,7 @@ impl<'a> Editor {
 		buffer
 	}
 
-	pub fn update_path(&mut self, path: PathBuf) {
+	pub async fn update_path(&mut self, path: PathBuf) {
 		self.path = path.clone();
 		let buffer = self.add_buffer(&path);
 		// disable editor if no note is loaded to avoid
@@ -119,9 +121,9 @@ impl<'a> Editor {
 		//}
 
 		self.editor_view.set_buffer(Some(&buffer));
-		self.editor_breadcrumb = self.build_breadcrumb().clone();
+		self.editor_breadcrumb = self.build_breadcrumb().await.clone();
 		self.editor_view.queue_draw();
-		self.place_cursor(&buffer);
+		self.place_cursor(&buffer).await;
 		self.editor_view.grab_focus();
 
 		let _ = self.write_caret_position_to_file(buffer);
@@ -139,7 +141,7 @@ impl<'a> Editor {
 
 	// @todo make this work.
 	// I somehow need to call this method when the file has finished loading
-	fn place_cursor(&self, buffer: &Buffer) {
+	async fn place_cursor(&self, buffer: &Buffer) {
 		if let Some(cursor_position ) = self.caret_position() {
 			let start_iter = buffer.start_iter();
 			let buffer_length = buffer.text(&start_iter, &buffer.end_iter(), false).len() as i32;
@@ -167,7 +169,7 @@ impl<'a> Editor {
 					let buffer = buffer.clone();
 					let typing_timeout = typing_timeout.clone();
 					let path = path.clone();
-					let config = config.clone();
+					let mut config = config.clone();
 					move || {
 						let buffer = buffer.clone();
 						let _ = config.set_meta_value(
@@ -203,8 +205,8 @@ impl<'a> Editor {
 		self.editor_view.set_cursor_visible(editable);
 	}
 
-	fn build_breadcrumb(&self) -> &Breadcrumb {
-		self.editor_breadcrumb.build(&self.path);
+	async fn build_breadcrumb(&self) -> &Breadcrumb {
+		self.editor_breadcrumb.build(&self.path).await;
 		&self.editor_breadcrumb
 	}
 

@@ -1,6 +1,8 @@
 mod imp;
 
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use std::path::{Path, PathBuf};
+use gtk::{glib, subclass::prelude::*};
+//use gtk::prelude::*;
 
 glib::wrapper! {
 	pub struct NotesListItem(ObjectSubclass<imp::NotesListItem>)
@@ -20,11 +22,29 @@ impl NotesListItem {
 		glib::Object::new()
 	}
 
-	pub fn append_tree_item(&self, item_label: &gtk::Label) {
+	pub fn append_tree_item(
+		&self,
+		name: &str,
+		path: PathBuf,
+		_pinned: bool,
+	) {
 		let imp = self.imp();
 
 		imp.icon.set_resource(Some("/com/bellbird/notes/icons/note.svg"));
-		imp.name.set_text(&item_label.label());
-		imp.path.set_text(&item_label.widget_name());
+
+		imp.name.set_text(&name);
+		imp.path.set_text(&path.display().to_string());
+	}
+
+	pub fn set_icon(&self) {
+		self.imp().icon.set_resource(Some("/com/bellbird/notes/icons/note.svg"));
+	}
+
+	pub fn set_name(&self, name: &str) {
+		self.imp().name.set_text(name);
+	}
+
+	pub fn set_path(&self, path: &Path) {
+		self.imp().path.set_text(&path.display().to_string());
 	}
 }

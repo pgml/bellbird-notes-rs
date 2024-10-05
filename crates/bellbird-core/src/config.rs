@@ -1,4 +1,5 @@
-use std::path::{Path, PathBuf};
+//use async_std::path::PathBuf;
+use std::path::PathBuf;
 
 use configparser::ini::Ini;
 use ::directories::BaseDirs;
@@ -58,11 +59,19 @@ impl ConfigOptions {
 }
 
 #[derive(Debug, Clone)]
-pub struct Config;
+pub struct Config {
+	ini: Ini,
+	ini_file: PathBuf,
+}
 
 impl<'a> Config {
 	pub fn new() -> Self {
-		Self {}
+		let ini = Ini::new_cs();
+
+		Self {
+			ini,
+			ini_file: PathBuf::new(),
+		}
 	}
 
 	pub fn app_version(&self) -> String {
@@ -113,7 +122,7 @@ impl<'a> Config {
 	pub fn config_file(&self, is_meta_info: bool) -> Result<PathBuf, anyhow::Error> {
 		match self.config_dir() {
 			Ok(config_dir) => {
-				if Path::new(&config_dir).is_dir() == false {
+				if std::path::Path::new(&config_dir).is_dir() == false {
 					return Err(anyhow::anyhow!(
 						"Could not find config directory: {}",
 						config_dir.display().to_string()
@@ -145,6 +154,16 @@ impl<'a> Config {
 		self.value(section, option, true)
 	}
 
+	fn load_file_async(&mut self, is_meta_info: bool) {
+		self.ini_file = self.config_file(is_meta_info).unwrap();
+		let _ = self.ini.load_async(&self.ini_file);
+	}
+
+	fn load_file(&mut self, is_meta_info: bool) {
+		self.ini_file = self.config_file(is_meta_info).unwrap();
+		let _ = self.ini.load(&self.ini_file);
+	}
+
 	pub fn config_value(
 		&self,
 		section: &str,
@@ -161,25 +180,34 @@ impl<'a> Config {
 		//file: &str
 	) -> Option<String> {
 		if let Ok(config_file) = self.config_file(is_meta_info) {
-			if !Path::new(&config_file).exists() && !config_file.is_file() {
+			if !config_file.exists() && !config_file.is_file() {
 				return None
 			}
 
 			let mut config = Ini::new_cs();
-			let mut config_value = String::new();
+			let mut config_value = None;
 
 			if let Ok(_) = config.load(&config_file) {
 				if let Some(value) = config.get(&section, &option.as_str()) {
-					config_value = value.to_string();
+					config_value = Some(value.to_string());
 				}
 			}
-			return Some(config_value)
+			return Some(config_value)?
 		}
 		None
 	}
 
+	pub async fn set_config_value_async(
+		&mut self,
+		section: &str,
+		option: ConfigOptions,
+		value: String,
+	) -> Result<()> {
+		self.set_value_async(section, option, value, false).await
+	}
+
 	pub fn set_config_value(
-		&self,
+		&mut self,
 		section: &str,
 		option: ConfigOptions,
 		value: String,
@@ -187,8 +215,17 @@ impl<'a> Config {
 		self.set_value(section, option, value, false)
 	}
 
-	pub fn set_meta_value(
-		&self,
+	pub async fn set_meta_value_async(
+		&mut self,
+		section: &str,
+		option: ConfigOptions,
+		value: String,
+	) -> Result<()> {
+		self.set_value_async(section, option, value, true).await
+	}
+
+	pub async fn set_meta_value(
+		&mut self,
 		section: &str,
 		option: ConfigOptions,
 		value: String,
@@ -196,21 +233,35 @@ impl<'a> Config {
 		self.set_value(section, option, value, true)
 	}
 
-	fn set_value(
-		&self,
+	async fn set_value_async(
+		&mut self,
 		section: &str,
 		option: ConfigOptions,
 		value: String,
 		is_meta_info: bool
 	) -> Result<()> {
-		let mut config = Ini::new_cs();
-		let config_file = self.config_file(is_meta_info)?;
-		let _ = config.load(&config_file);
+		self.load_file_async(is_meta_info);
 		// read the existing config because it sometimes gets truncated
-		let outstring = config.writes();
-		let _ = config.read(outstring);
-		config.set(section, option.as_str(), Some(value.clone()));
-		let _ = config.write(&config_file);
+		let outstring = self.ini.writes();
+		let _ = self.ini.read(outstring);
+		self.ini.set(section, option.as_str(), Some(value.clone()));
+		let _ = self.ini.write_async(&self.ini_file).await;
+		Ok(())
+	}
+
+	fn set_value(
+		&mut self,
+		section: &str,
+		option: ConfigOptions,
+		value: String,
+		is_meta_info: bool
+	) -> Result<()> {
+		self.load_file(is_meta_info);
+		// read the existing config because it sometimes gets truncated
+		let outstring = self.ini.writes();
+		let _ = self.ini.read(outstring);
+		self.ini.set(section, option.as_str(), Some(value.clone()));
+		let _ = self.ini.write(&self.ini_file);
 		Ok(())
 	}
 }

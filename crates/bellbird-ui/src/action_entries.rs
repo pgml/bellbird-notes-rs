@@ -71,8 +71,13 @@ impl<'a> ActionEntries<'a> {
 					.expect("Could not get Parameter")
 					.get::<String>()
 					.expect("The variant nees to be of type `String`");
-				notes_list_clone.borrow_mut().update_current_note(path.clone().into());
-				editor_clone.borrow_mut().update_path(path.into());
+				MainContext::default().spawn_local(glib::clone!(
+					#[weak] notes_list_clone, #[weak] editor_clone, #[strong] path,
+					async move {
+						notes_list_clone.borrow_mut().update_current_note(path.clone().into());
+						editor_clone.borrow_mut().update_path(path.into()).await;
+					}
+				));
 			})
 			.build();
 

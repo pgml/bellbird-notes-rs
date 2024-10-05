@@ -1,6 +1,7 @@
-use std::{cell::RefCell, path::PathBuf, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::path::PathBuf;
 
-use bellbird_core::{config::{Config, ConfigOptions}, notes::Notes};
+use bellbird_core::notes::Notes;
 use glib::MainContext;
 use gtk::{gio, prelude::*};
 
@@ -45,7 +46,12 @@ impl NotesListContextMenu {
 		let pin_note = gio::SimpleAction::new("toggle-pin-note", None);
 		{
 			let self_clone = Arc::clone(&self);
-			pin_note.connect_activate(move |_, _| self_clone.toggle_pin_note());
+			pin_note.connect_activate(move |_, _| {
+				MainContext::default().spawn_local(glib::clone!(
+					#[weak] self_clone,
+					async move { self_clone.toggle_pin_note().await; }
+				));
+			});
 		}
 		app_clone.add_action(&pin_note);
 
@@ -83,7 +89,7 @@ impl NotesListContextMenu {
 						let mut path = PathBuf::from(notes_list_clone.borrow_mut()
 							.path.to_str().unwrap_or(""));
 						path.push(&note);
-						let _ = Notes::write_to_file(path, String::new()).await;
+						let _ = Notes::write_to_file(path, String::new());
 						notes_list_clone.borrow_mut().refresh().await;
 					}
 				));
@@ -117,6 +123,14 @@ impl NotesListContextMenu {
 			},
 			|| {}
 		)
+	}
+
+	async fn toggle_pin_note(&self) {
+		let notes_list_clone = self.notes_list.clone();
+		let binding = notes_list_clone.borrow_mut();
+		let path = binding.selected_ctx_path.borrow_mut();
+		let is_pinned = Notes::is_pinned(&path);
+		Notes::set_is_pinned(&path, !is_pinned);
 	}
 
 	fn delete_note(&self) {

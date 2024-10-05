@@ -1,26 +1,26 @@
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::Arc;
 
 use bellbird_core::config::{Config, ConfigOptions, ConfigSections};
 use bellbird_core::notes::Notes;
 
 use glib::MainContext;
-use gtk::{gio, SignalListItemFactory};
+use gtk::gio;
 use gtk::prelude::*;
-//use sourceview5::subclass::view;
 
 use crate::contextmenu::{BbMenuItem, BbMenuSection, ContextMenu};
+use crate::notes_list_model_item::ListModelItem;
 use crate::notes_list_row::NotesListItem;
+
 
 #[derive(Debug, Clone)]
 pub struct NotesList {
 	pub path: PathBuf,
+	//pub model: gio::ListStore,
+	//pub list_view: gtk::ListView,
 	pub model: gio::ListStore,
-	//pub model: (gio::ListStore, gio::ListStore),
-	pub list_view: gtk::ListView,
-	//pub list_view: (gtk::ListView, gtk::ListView),
+	pub list_view: (gtk::ListView, gtk::ListView),
 	pub current_note: Rc<RefCell<PathBuf>>,
 	pub selected_ctx_path: Rc<RefCell<PathBuf>>,
 }
@@ -34,19 +34,19 @@ impl<'a> NotesList {
 			gtk::Align::Fill
 		);
 
-		//let factory_pinned = Self::create_list_view_factory();
-		//let (list_view_pinned, model_pinned) = Self::create_list_view(
-		//	factory_pinned,
-		//	true,
-		//	gtk::Align::Start
-		//);
+		let factory_pinned = Self::create_list_view_factory();
+		let (list_view_pinned, _) = Self::create_list_view(
+			factory_pinned,
+			true,
+			gtk::Align::Start
+		);
 
 		Self {
 			path: path.to_path_buf(),
-			//model: (model, model_pinned),
-			//list_view: (list_view, list_view_pinned),
 			model,
-			list_view,
+			list_view: (list_view, list_view_pinned),
+			//model,
+			//list_view,
 			current_note: Rc::new(RefCell::new(path.to_path_buf())),
 			selected_ctx_path: Rc::new(RefCell::new(path.to_path_buf())),
 		}
@@ -54,32 +54,21 @@ impl<'a> NotesList {
 
 	pub async fn update_path(&mut self, path: PathBuf) {
 		self.path = path.clone();
-		//let (model, model_pinned) = &self.model;
 		let model = &self.model;
-		//model_pinned.remove_all();
-
 		let this = self.clone();
 
 		MainContext::default().spawn_local(glib::clone!(
-			//#[strong] model, #[strong] model_pinned,
 			#[weak] model, #[strong] this,
 			async move {
 				if let Ok(notes) = Notes::list(&path).await {
 					model.remove_all();
 					notes.iter().for_each(|note| {
 						let path = note.path.clone();
-						let label = gtk::Label::builder()
-							.label(&note.name)
-							.name(&path)
-							.build();
-
-						//if Notes::is_pinned(&PathBuf::from(path)) {
-						//	//println!("{}", note.name);
-						//	model_pinned.append(&label);
-						//}
-						//else {
-						model.append(&label)
-						//}
+						let list_item = ListModelItem::new();
+						list_item.set_name(&note.name);
+						list_item.set_path(&path);
+						list_item.set_is_pinned(note.is_pinned);
+						model.append(&list_item);
 					});
 					this.set_selection();
 				}
@@ -91,8 +80,8 @@ impl<'a> NotesList {
 		vexpand: bool,
 		valign: gtk::Align,
 	) -> (gtk::ListView, gio::ListStore) {
-		let model = gio::ListStore::new::<gtk::Label>();
-		let config = Config::new();
+		//let model = gio::ListStore::new::<gtk::Label>();
+		let model = gio::ListStore::new::<ListModelItem>();
 
 		let selection_model = gtk::MultiSelection::new(Some(model.clone()));
 		let list_view = gtk::ListView::builder()
@@ -108,15 +97,16 @@ impl<'a> NotesList {
 			.show_separators(true)
 			.build();
 
-		list_view.connect_activate(glib::clone!(
-			#[strong] config,
+		list_view.connect_activate(
 			move |list_view, position| {
 				let model = list_view.model().unwrap();
-				let label = model.item(position).and_downcast::<gtk::Label>().unwrap();
-				let path = label.widget_name();
+				let model_item = model.item(position).and_downcast::<ListModelItem>().unwrap();
+				let path = model_item.path();
+				//path = label.path();
+				//println!("{:?} {:?}", model_item, path);
 				model.select_item(position, true);
 
-				let _ = config.set_config_value(
+				let _ = Config::new().set_config_value(
 					ConfigSections::General.as_str(),
 					ConfigOptions::CurrentNote,
 					path.to_string()
@@ -126,7 +116,7 @@ impl<'a> NotesList {
 					.activate_action("app.open-note", Some(&path.to_variant()))
 					.expect("The action `open-note` does not exist.");
 			}
-		));
+		);
 
 		(list_view, model)
 	}
@@ -141,11 +131,16 @@ impl<'a> NotesList {
 
 		factory.connect_bind(move |_factory, item| {
 			let item = item.downcast_ref::<gtk::ListItem>().unwrap();
-			let label = item.item().and_downcast::<gtk::Label>().unwrap();
+			//let label = item.item().and_downcast::<gtk::Label>().unwrap();
+			let model_item = item.item().and_downcast::<ListModelItem>().unwrap();
 			let child = item.child().and_downcast::<NotesListItem>().unwrap();
 			item.set_selectable(false);
-			//println!("{}", label.label());
-			child.append_tree_item(&label);
+
+			child.append_tree_item(
+				&model_item.name(),
+				model_item.path().into(),
+				false,
+			);
 		});
 
 		factory
@@ -163,23 +158,23 @@ impl<'a> NotesList {
 		self.selected_ctx_path.borrow_mut().set_file_name(path);
 	}
 
-	//fn view(&self) -> (&gtk::ListView, &gtk::ListView) {
-	fn view(&self) -> &gtk::ListView {
-		//let (list_view, list_view_pinned) = &self.list_view;
-		let list_view = &self.list_view;
-		//(&list_view, &list_view_pinned)
-		&list_view
+	fn view(&self) -> (&gtk::ListView, &gtk::ListView) {
+	//fn view(&self) -> &gtk::ListView {
+		//let list_view = &self.list_view;
+		let (list_view, list_view_pinned) = &self.list_view;
+		//&list_view
+		(&list_view, &list_view_pinned)
 	}
 
 	fn set_selection(&self) {
 		let current_note = self.current_note.clone();
-		//let (list_view, list_view_pinned) = &self.list_view;
-		let list_view = &self.list_view;
+		let (list_view, _list_view_pinned) = &self.list_view;
+		//let list_view = &self.list_view;
 
 		if let Some(selection_model) = list_view.model() {
 			for index in 0..selection_model.n_items() {
 				if let Some(item) = selection_model.item(index) {
-					let path = item.downcast::<gtk::Label>().unwrap().widget_name();
+					let path = item.downcast::<ListModelItem>().unwrap().path();
 					if path.to_string() == current_note.borrow_mut().display().to_string() {
 						selection_model.select_item(index, true);
 						break;
@@ -212,8 +207,8 @@ impl<'a> NotesList {
 		let app_clone = app.clone();
 		let self_clone = self.clone();
 
-		//let (list_view, list_view_pinned) = &self.list_view;
-		let list_view = &self.list_view;
+		let (list_view, _list_view_pinned) = &self.list_view;
+		//let list_view = &self.list_view;
 		ContextMenu::new(sections, &list_view, 180).build(move |widget| {
 			let actions = vec![
 				"open-note-in-tab",
@@ -291,8 +286,8 @@ pub fn build_ui(
 		.build();
 
 	let notes_list = notes_list.borrow_mut();
-	//let (view, pinned_view) = notes_list.view();
-	let view = notes_list.view();
+	//let view = notes_list.view();
+	let (view, _pinned_view) = notes_list.view();
 
 	//let notes_view_pinned = create_list_view_wrapper(
 	//	"Pinned",
@@ -326,7 +321,7 @@ pub fn build_ui(
 fn create_list_view_wrapper<F>(
 	label: &str,
 	view: &gtk::ListView,
-	vexpand: bool,
+	_vexpand: bool,
 	f: F
 ) -> gtk::Box
 where
@@ -358,17 +353,12 @@ where
 	wrapper.append(&notes_panel_label);
 	wrapper.append(&scrollable_window);
 
-	//view.model().unwrap().connect_items_changed(glib::clone!(
-	//	#[weak]
-	//	wrapper,
-	//	#[weak]
-	//	scrollable_window,
-	//	#[weak]
-	//	notes_panel_label,
-	//	move |_model, _, _, _| {
-	//		f(wrapper.clone(), scrollable_window, notes_panel_label);
-	//	}
-	//));
+	view.model().unwrap().connect_items_changed(glib::clone!(
+		#[weak] wrapper, #[weak] scrollable_window, #[weak] notes_panel_label,
+		move |_model, _, _, _| {
+			f(wrapper.clone(), scrollable_window, notes_panel_label);
+		}
+	));
 
 	wrapper
 }
