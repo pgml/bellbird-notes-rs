@@ -17,7 +17,7 @@ impl<'a> Dialogue<'a> {
 	pub fn input<F: 'static, C>(&self, title: &str, label: &str, placeholder: &str, ok: F, cancel: C)
 	where
 		F: Fn(String) + 'static + Clone,
-		C: Fn() + 'static + Copy
+		C: Fn() + 'static
 	{
 		self.create_window(title, 350, 0);
 
@@ -34,23 +34,20 @@ impl<'a> Dialogue<'a> {
 			.text(placeholder)
 			.build();
 
-		let ok_clone = ok.clone();
 		let window_clone = self.window.clone();
 		input.connect_activate(glib::clone!(
-			#[weak] window_clone,
+			#[weak] window_clone, #[strong] ok,
 			move |input| {
-				ok_clone(input.text().to_string());
+				ok(input.text().to_string());
 				window_clone.close();
 			}
 		));
 
-		let input_clone = input.clone();
 		let button_box = self.button_box();
-
-		button_box.append(&self.ok_button(move || {
-			let note_name = input_clone.text();
-			ok(note_name.to_string());
-		}));
+		button_box.append(&self.ok_button(glib::clone!(
+			#[strong] ok, #[weak] input,
+			move || ok(input.text().to_string())
+		)));
 		button_box.append(&self.cancel_button(move || cancel()));
 
 		window_box.append(&label);
