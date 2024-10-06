@@ -1,4 +1,4 @@
-use gtk::prelude::*;
+use gtk::{gdk, prelude::*};
 
 #[derive(Debug, Clone)]
 pub struct Dialogue<'a> {
@@ -17,7 +17,7 @@ impl<'a> Dialogue<'a> {
 	pub fn input<F: 'static, C>(&self, title: &str, label: &str, placeholder: &str, ok: F, cancel: C)
 	where
 		F: Fn(String) + 'static + Clone,
-		C: Fn() + 'static
+		C: Fn() + 'static + Copy
 	{
 		self.create_window(title, 350, 0);
 
@@ -36,23 +36,28 @@ impl<'a> Dialogue<'a> {
 
 		let ok_clone = ok.clone();
 		let window_clone = self.window.clone();
-		input.connect_activate(move |input| {
-			ok(input.text().to_string());
-			window_clone.close();
-		});
+		input.connect_activate(glib::clone!(
+			#[weak] window_clone,
+			move |input| {
+				ok_clone(input.text().to_string());
+				window_clone.close();
+			}
+		));
 
 		let input_clone = input.clone();
 		let button_box = self.button_box();
 
 		button_box.append(&self.ok_button(move || {
 			let note_name = input_clone.text();
-			ok_clone(note_name.to_string());
+			ok(note_name.to_string());
 		}));
 		button_box.append(&self.cancel_button(move || cancel()));
 
 		window_box.append(&label);
 		window_box.append(&input);
 		window_box.append(&button_box);
+
+		self.key_events(&window_box);
 
 		self.window.set_child(Some(&window_box));
 		self.window.present();
@@ -83,6 +88,8 @@ impl<'a> Dialogue<'a> {
 		window_box.append(&label);
 		window_box.append(&description);
 		window_box.append(&button_box);
+
+		self.key_events(&window_box);
 
 		self.window.set_child(Some(&window_box));
 		self.window.present();
@@ -159,5 +166,22 @@ impl<'a> Dialogue<'a> {
 		});
 
 		cancel_button
+	}
+
+	fn key_events(&self, window_box: &gtk::Box) {
+		let controller = gtk::EventControllerKey::builder()
+			.propagation_phase(gtk::PropagationPhase::Capture)
+			.build();
+
+		let window_clone = self.window.clone();
+		controller.connect_key_released(move |_, key, _, _| {
+				match key {
+					gdk::Key::Escape => window_clone.close(),
+					_ => (),
+				}
+			}
+		);
+
+		window_box.add_controller(controller);
 	}
 }

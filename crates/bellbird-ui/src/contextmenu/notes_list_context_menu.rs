@@ -80,7 +80,7 @@ impl NotesListContextMenu {
 		let dialogue = Dialogue::new(&self.app);
 		dialogue.input(
 			"Create New Note",
-			"Enter note namee:",
+			"Enter note name:",
 			"New note",
 			move |note| {
 				MainContext::default().spawn_local(glib::clone!(
