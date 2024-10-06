@@ -65,7 +65,7 @@ impl<'a> Notes {
 
 	pub fn write_to_file(mut path: PathBuf, content: String) -> Result<()> {
 		path = Self::ensure_correct_path(&path);
-		let _ = fs::write(path, content);
+		let _ = std::fs::write(path, content);
 		Ok(())
 	}
 
