@@ -224,7 +224,7 @@ impl<'a> Config {
 		self.set_value_async(section, option, value, true).await
 	}
 
-	pub async fn set_meta_value(
+	pub fn set_meta_value(
 		&mut self,
 		section: &str,
 		option: ConfigOptions,
