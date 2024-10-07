@@ -103,6 +103,7 @@ impl NotesListContextMenu {
 		let dialogue = Dialogue::new(&self.app);
 		let pathbuf_rc = self.notes_list.borrow_mut().selected_ctx_path.clone();
 		let (note_path, file_stem) = self.get_path_and_stem(&pathbuf_rc);
+
 		dialogue.input(
 			"Rename Note",
 			&format!("Rename ´{}´ to:", file_stem),
@@ -111,11 +112,14 @@ impl NotesListContextMenu {
 				MainContext::default().spawn_local(glib::clone!(
 					#[strong] note_path, #[strong] notes_list_clone,
 					async move {
-						let mut new_path = PathBuf::from(notes_list_clone.borrow_mut()
-							.path.to_str().unwrap_or(""));
+						let mut new_path = PathBuf::from(
+							notes_list_clone.borrow_mut()
+								.path.to_str()
+								.unwrap_or("")
+						);
 						new_path.push(&note);
-						let old_path = PathBuf::from(&note_path);
 
+						let old_path = PathBuf::from(&note_path);
 						let _f = Notes::rename(old_path, new_path).await;
 						notes_list_clone.borrow_mut().refresh().await;
 					}
@@ -129,8 +133,9 @@ impl NotesListContextMenu {
 		let notes_list_clone = self.notes_list.clone();
 		let binding = notes_list_clone.borrow_mut();
 		let path = binding.selected_ctx_path.borrow_mut();
-		let is_pinned = Notes::is_pinned(&path);
+		let is_pinned = Notes::is_pinned(&path).await;
 		Notes::set_is_pinned(&path, !is_pinned);
+		binding.clone().refresh().await;
 	}
 
 	fn delete_note(&self) {

@@ -19,7 +19,7 @@ pub struct BbMenuItem<'a> {
 
 pub struct ContextMenu<'a> {
 	pub sections: Vec<BbMenuSection<'a>>,
-	pub parent: &'a gtk::ListView,
+	pub parent: Vec<gtk::ListView>,
 	pub width: i32,
 	popover: gtk::PopoverMenu,
 }
@@ -27,7 +27,7 @@ pub struct ContextMenu<'a> {
 impl<'a> ContextMenu<'a> {
 	pub fn new(
 		sections: Vec<BbMenuSection<'a>>,
-		parent: &'a gtk::ListView,
+		parent: Vec<gtk::ListView>,
 		width: i32
 	) -> Self {
 		let context_menu = gio::Menu::new();
@@ -42,32 +42,36 @@ impl<'a> ContextMenu<'a> {
 
 	pub fn build<F: 'static>(&self, on_pressed: F)
 	where
-		F: Fn(gtk::Widget)
+		F: Fn(gtk::Widget) + Clone
 	{
-		self.popover.set_menu_model(Some(&self.menu_model()));
-		self.popover.set_parent(self.parent);
-		self.popover.set_has_arrow(false);
-		self.popover.set_size_request(self.width, 0);
+		self.parent.iter().for_each(|parent| {
+			let context_menu = self.menu_model();
+			let popover = gtk::PopoverMenu::from_model(Some(&context_menu));
+			popover.set_menu_model(Some(&context_menu));
+			popover.set_parent(parent);
+			popover.set_has_arrow(false);
+			popover.set_size_request(self.width, 0);
 
-		let gesture = self.gesture();
-		let popover = self.popover.clone();
-		let list_view_clone = self.parent.clone();
+			let gesture = self.gesture();
+			let list_view_clone = parent.clone();
 
-		gesture.connect_pressed(move |gesture ,_n_press , x, y| {
-			if gesture.current_button() == 3 {
-				let position = Rectangle::new(x as i32, y as i32, 1, 1);
-				let (width, _) = popover.size_request();
-				popover.set_pointing_to(Some(&position));
-				popover.set_offset(width / 2, 0);
-				popover.popup();
+			let on_pressed_clone = on_pressed.clone();
+			gesture.connect_pressed(move |gesture ,_n_press , x, y| {
+				if gesture.current_button() == 3 {
+					let position = Rectangle::new(x as i32, y as i32, 1, 1);
+					let (width, _) = popover.size_request();
+					popover.set_pointing_to(Some(&position));
+					popover.set_offset(width / 2, 0);
+					popover.popup();
 
-				if let Some(list_row_item) = list_view_clone.pick(x, y, gtk::PickFlags::DEFAULT) {
-					on_pressed(list_row_item);
+					if let Some(list_row_item) = list_view_clone.pick(x, y, gtk::PickFlags::DEFAULT) {
+						on_pressed_clone(list_row_item);
+					}
 				}
-			}
-		});
+			});
 
-		self.parent.add_controller(gesture);
+			parent.add_controller(gesture);
+		});
 	}
 
 	fn menu_model(&self) -> gio::Menu {

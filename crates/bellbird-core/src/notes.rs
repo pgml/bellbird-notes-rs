@@ -31,6 +31,7 @@ impl<'a> Notes {
 			));
 		}
 
+		let pinned_notes = Notes::pinned_notes(path).unwrap();
 		let mut notes: Vec<Note> = vec![];
 
 		if let Ok(mut paths) = fs::read_dir(path).await {
@@ -43,10 +44,10 @@ impl<'a> Notes {
 					let file_path = dir_entry.path().display().to_string();
 					let mut file_name = dir_entry.file_name();
 
-					//let is_pinned = Notes::is_pinned(
-					//	&PathBuf::from(file_path.clone())
-					//).await;
-					let is_pinned = false;
+					let mut is_pinned = false;
+					if pinned_notes.contains(&file_path) {
+						is_pinned = true;
+					}
 
 					file_name = Path::new(&file_name).with_extension("").into();
 
@@ -138,5 +139,20 @@ impl<'a> Notes {
 			ConfigOptions::Pinned,
 			is_pinned.to_string()
 		);
+	}
+
+	pub fn pinned_notes(path: &Path) -> Option<Vec<String>> {
+		let mut config = Config::new();
+		let sections = config.sections_by_value(ConfigOptions::Pinned, "true".to_string());
+		let path_str = path.to_str().unwrap();
+		let mut pinned_notes = vec![];
+
+		sections.clone().unwrap().iter().for_each(|section| {
+			if section.contains(path_str) {
+				pinned_notes.push(section.to_string());
+			}
+		});
+
+		Some(pinned_notes)
 	}
 }

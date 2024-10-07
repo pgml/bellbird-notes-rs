@@ -75,12 +75,10 @@ fn build_ui(app: &adw::Application) {
 	register_actions(&app, &directory_tree, &notes_list, &editor);
 
 	panels_wrapper.append(&directory_tree::build_ui(&app, &directory_tree));
-	panels_wrapper.append(&notes_list::build_ui(&app, &notes_list));
+	panels_wrapper.append(&notes_list.borrow_mut().build_ui(&app));
 	panels_wrapper.append(&editor_view::build_ui(&editor));
 
-
 	window_box.append(&panels_wrapper);
-
 	window.present();
 }
 

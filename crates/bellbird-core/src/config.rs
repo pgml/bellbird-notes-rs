@@ -197,6 +197,26 @@ impl<'a> Config {
 		None
 	}
 
+	pub fn sections_by_value(
+		&mut self,
+		option: ConfigOptions,
+		expected_value: String
+	) -> Option<Vec<String>> {
+		self.load_file(true);
+
+		let mut sections = vec![];
+		for section in self.ini.sections().iter() {
+			let value = self.ini.get(&section, &option.as_str());
+			if value.is_some() && !expected_value.is_empty() {
+				if value.unwrap() == expected_value {
+					sections.push(section.to_string());
+				}
+			}
+		}
+
+		return Some(sections);
+	}
+
 	pub async fn set_config_value_async(
 		&mut self,
 		section: &str,

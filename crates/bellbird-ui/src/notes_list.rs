@@ -17,12 +17,11 @@ use crate::notes_list_row::NotesListItem;
 #[derive(Debug, Clone)]
 pub struct NotesList {
 	pub path: PathBuf,
-	//pub model: gio::ListStore,
-	//pub list_view: gtk::ListView,
-	pub model: gio::ListStore,
+	pub model: (gio::ListStore, gio::ListStore),
 	pub list_view: (gtk::ListView, gtk::ListView),
 	pub current_note: Rc<RefCell<PathBuf>>,
 	pub selected_ctx_path: Rc<RefCell<PathBuf>>,
+	panel_box: gtk::Box
 }
 
 impl<'a> NotesList {
@@ -35,40 +34,58 @@ impl<'a> NotesList {
 		);
 
 		let factory_pinned = Self::create_list_view_factory();
-		let (list_view_pinned, _) = Self::create_list_view(
+		let (list_view_pinned, model_pinned) = Self::create_list_view(
 			factory_pinned,
 			true,
 			gtk::Align::Start
 		);
 
+		let panel_box = NotesList::panel_box();
+
 		Self {
 			path: path.to_path_buf(),
-			model,
+			model: (model, model_pinned),
 			list_view: (list_view, list_view_pinned),
-			//model,
-			//list_view,
 			current_note: Rc::new(RefCell::new(path.to_path_buf())),
 			selected_ctx_path: Rc::new(RefCell::new(path.to_path_buf())),
+			panel_box
 		}
 	}
 
 	pub async fn update_path(&mut self, path: PathBuf) {
 		self.path = path.clone();
-		let model = &self.model;
+		let (model, model_pinned) = &self.model;
 		let this = self.clone();
 
+		// hide pinned notes when there are none
+		// @todo: try to remove the flickering when switching to directories
+		// with pinned notes from a directory without pinned notes
+		let first_child = self.panel_box.first_child().unwrap();
+		first_child.set_visible(false);
+
+		let pinned_notes = Notes::pinned_notes(&self.path).unwrap();
+		if !pinned_notes.is_empty() {
+			first_child.set_visible(true);
+		}
+
 		MainContext::default().spawn_local(glib::clone!(
-			#[weak] model, #[strong] this,
+			#[weak] model, #[weak] model_pinned, #[strong] this,
 			async move {
 				if let Ok(notes) = Notes::list(&path).await {
 					model.remove_all();
+					model_pinned.remove_all();
 					notes.iter().for_each(|note| {
 						let path = note.path.clone();
 						let list_item = ListModelItem::new();
 						list_item.set_name(&note.name);
 						list_item.set_path(&path);
-						list_item.set_is_pinned(note.is_pinned);
-						model.append(&list_item);
+						//list_item.set_is_pinned(note.is_pinned);
+						if note.is_pinned {
+							model_pinned.append(&list_item);
+						}
+						else {
+							model.append(&list_item);
+						}
 					});
 					this.set_selection();
 				}
@@ -159,10 +176,7 @@ impl<'a> NotesList {
 	}
 
 	fn view(&self) -> (&gtk::ListView, &gtk::ListView) {
-	//fn view(&self) -> &gtk::ListView {
-		//let list_view = &self.list_view;
 		let (list_view, list_view_pinned) = &self.list_view;
-		//&list_view
 		(&list_view, &list_view_pinned)
 	}
 
@@ -207,9 +221,9 @@ impl<'a> NotesList {
 		let app_clone = app.clone();
 		let self_clone = self.clone();
 
-		let (list_view, _list_view_pinned) = &self.list_view;
-		//let list_view = &self.list_view;
-		ContextMenu::new(sections, &list_view, 180).build(move |widget| {
+		let (list_view, list_view_pinned) = &self.list_view;
+		let list_views = vec![list_view.clone(), list_view_pinned.clone()];
+		ContextMenu::new(sections, list_views, 180).build(move |widget| {
 			let actions = vec![
 				"open-note-in-tab",
 				"duplicate-note",
@@ -268,60 +282,63 @@ impl<'a> NotesList {
 			app.action_enabled_changed(action, false);
 		}
 	}
-}
 
-pub fn build_ui(
-	app: &adw::Application,
-	notes_list: &Rc<RefCell<NotesList>>
-) -> gtk::Box {
-	let notes_panel = gtk::Box::builder()
-		.orientation(gtk::Orientation::Vertical)
-		.vexpand(true)
-		.valign(gtk::Align::Fill)
-		.width_request(195)
-		.margin_top(3)
-		.margin_bottom(3)
-		.margin_end(2)
-		.css_classes(["notes-panel"])
-		.build();
+	fn panel_box() -> gtk::Box {
+		let notes_panel = gtk::Box::builder()
+			.orientation(gtk::Orientation::Vertical)
+			.vexpand(true)
+			.valign(gtk::Align::Fill)
+			.width_request(195)
+			.margin_top(3)
+			.margin_bottom(3)
+			.margin_end(2)
+			.css_classes(["notes-panel"])
+			.build();
 
-	let notes_list = notes_list.borrow_mut();
-	//let view = notes_list.view();
-	let (view, _pinned_view) = notes_list.view();
+		notes_panel
+	}
 
-	//let notes_view_pinned = create_list_view_wrapper(
-	//	"Pinned",
-	//	pinned_view,
-	//	false,
-	//	glib::clone!(
-	//		#[weak]
-	//		view,
-	//		move |wrapper, scrolled_window, _| {
-	//			//let (min_size, _) = view.preferred_size();
-	//			//wrapper.set_height_request(min_size.height());
-	//			//view.set_height_request(min_size.height());
-	//			//view.set_height_request(min_size.height());
-	//			//println!("{:?}", view.preferred_size());
-	//		}
-	//	)
-	//);
-	let notes_view = create_list_view_wrapper(
-		"Notes",
-		view,
-		true,
-		|_, _, _| {}
-	);
+	pub fn build_ui(
+		&self,
+		app: &adw::Application,
+	) -> gtk::Box {
+		let (view, pinned_view) = self.view();
 
-	notes_list.build_context_menu(app);
-	//notes_panel.append(&notes_view_pinned);
-	notes_panel.append(&notes_view);
-	notes_panel
+		let notes_view_pinned = create_list_view_wrapper(
+			"Pinned",
+			pinned_view,
+			false,
+			glib::clone!(
+				#[weak] pinned_view, #[weak] view,
+				move |wrapper, scrolled_window, _| {
+					let (min_size, _) = pinned_view.preferred_size();
+					wrapper.set_height_request(min_size.height());
+					//println!("{:?} {:?}", pinned_view.height_request(), view.height());
+					//view.set_height_request(min_size.height());
+					//view.set_height_request(min_size.height());
+					//println!("{:?}", view.preferred_size());
+				}
+			)
+		);
+
+		let notes_view = create_list_view_wrapper(
+			"Notes",
+			view,
+			true,
+			|_, _, _| {}
+		);
+
+		self.build_context_menu(app);
+		self.panel_box.append(&notes_view_pinned);
+		self.panel_box.append(&notes_view);
+		self.panel_box.clone()
+	}
 }
 
 fn create_list_view_wrapper<F>(
 	label: &str,
 	view: &gtk::ListView,
-	_vexpand: bool,
+	vexpand: bool,
 	f: F
 ) -> gtk::Box
 where
@@ -345,8 +362,7 @@ where
 	let wrapper = gtk::Box::builder()
 		.orientation(gtk::Orientation::Vertical)
 		.name(label.to_lowercase())
-		//.height_request(200)
-		//.vexpand(vexpand)
+		.vexpand(vexpand)
 		//.valign(gtk::Align::Fill)
 		.build();
 

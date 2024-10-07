@@ -200,7 +200,8 @@ impl<'a> DirectoryTree {
 		let app_clone = app.clone();
 		let self_clone = self.clone();
 
-		ContextMenu::new(sections, &self.list_view, 180).build(move |widget| {
+		let list_view = vec![self.list_view.clone()];
+		ContextMenu::new(sections, list_view, 180).build(move |widget| {
 			let actions = vec![
 				"open-folder-in-tab",
 				"duplicate-folder",
