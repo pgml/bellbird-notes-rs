@@ -1,6 +1,8 @@
-use std::{cell::RefCell, path::PathBuf, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::path::PathBuf;
 
 use bellbird_core::notes::Notes;
+use glib::MainContext;
 use gtk::{gio, prelude::*};
 
 use crate::{dialogue::Dialogue, notes_list::NotesList};
@@ -42,13 +44,26 @@ impl NotesListContextMenu {
 		app_clone.add_action(&duplicate_note);
 
 		let pin_note = gio::SimpleAction::new("toggle-pin-note", None);
-		pin_note.connect_activate(move |_, _| println!("pin note"));
+		{
+			let self_clone = Arc::clone(&self);
+			pin_note.connect_activate(move |_, _| {
+				MainContext::default().spawn_local(glib::clone!(
+					#[weak] self_clone,
+					async move { self_clone.toggle_pin_note().await; }
+				));
+			});
+		}
 		app_clone.add_action(&pin_note);
 
 		let rename_note = gio::SimpleAction::new("rename-note", None);
 		{
 			let self_clone = Arc::clone(&self);
-			rename_note.connect_activate(move |_, _| self_clone.rename_note());
+			rename_note.connect_activate(move |_, _| {
+				MainContext::default().spawn_local(glib::clone!(
+					#[weak] self_clone,
+					async move { self_clone.rename_note().await; }
+				));
+			});
 		}
 		app_clone.add_action(&rename_note);
 
@@ -65,38 +80,62 @@ impl NotesListContextMenu {
 		let dialogue = Dialogue::new(&self.app);
 		dialogue.input(
 			"Create New Note",
-			"Enter note namee:",
+			"Enter note name:",
 			"New note",
 			move |note| {
-				let mut path = PathBuf::from(notes_list_clone.borrow_mut()
-					                           .path.to_str().unwrap_or(""));
-				path.push(&note);
-				Notes::write_to_file(path, String::new());
-				notes_list_clone.borrow_mut().refresh();
+				MainContext::default().spawn_local(glib::clone!(
+					#[weak] notes_list_clone,
+					async move {
+						let mut path = PathBuf::from(notes_list_clone.borrow_mut()
+							.path.to_str().unwrap_or(""));
+						path.push(&note);
+						let _ = Notes::write_to_file(path, String::new());
+						notes_list_clone.borrow_mut().refresh().await;
+					}
+				));
 			},
 			|| {}
 		)
 	}
 
-	fn rename_note(&self) {
-		let notes_list = self.notes_list.clone();
+	async fn rename_note(&self) {
+		let notes_list_clone = self.notes_list.clone();
 		let dialogue = Dialogue::new(&self.app);
 		let pathbuf_rc = self.notes_list.borrow_mut().selected_ctx_path.clone();
 		let (note_path, file_stem) = self.get_path_and_stem(&pathbuf_rc);
+
 		dialogue.input(
 			"Rename Note",
 			&format!("Rename ´{}´ to:", file_stem),
 			&file_stem,
 			move |note| {
-				let mut new_path = PathBuf::from(notes_list.borrow_mut()
-					                           .path.to_str().unwrap_or(""));
-				new_path.push(&note);
-				let old_path = PathBuf::from(&note_path);
-				Notes::rename(old_path, new_path);
-				notes_list.borrow_mut().refresh();
+				MainContext::default().spawn_local(glib::clone!(
+					#[strong] note_path, #[strong] notes_list_clone,
+					async move {
+						let mut new_path = PathBuf::from(
+							notes_list_clone.borrow_mut()
+								.path.to_str()
+								.unwrap_or("")
+						);
+						new_path.push(&note);
+
+						let old_path = PathBuf::from(&note_path);
+						let _f = Notes::rename(old_path, new_path).await;
+						notes_list_clone.borrow_mut().refresh().await;
+					}
+				));
 			},
 			|| {}
 		)
+	}
+
+	async fn toggle_pin_note(&self) {
+		let notes_list_clone = self.notes_list.clone();
+		let binding = notes_list_clone.borrow_mut();
+		let path = binding.selected_ctx_path.borrow_mut();
+		let is_pinned = Notes::is_pinned(&path);
+		Notes::set_is_pinned(&path, !is_pinned);
+		binding.clone().refresh().await;
 	}
 
 	fn delete_note(&self) {
@@ -107,13 +146,19 @@ impl NotesListContextMenu {
 		let dialogue = Dialogue::new(&app_clone);
 		let pathbuf_rc = self.notes_list.borrow_mut().selected_ctx_path.clone();
 		let (note_path, file_stem) = self.get_path_and_stem(&pathbuf_rc);
+
 		dialogue.warning_yes_no(
 			"Delete New Note",
 			"Do you really want to delete this note?",
 			&format!("´{}´", file_stem),
 			move || {
-				Notes::delete(&PathBuf::from(&note_path));
-				notes_list_clone.borrow_mut().refresh();
+				MainContext::default().spawn_local(glib::clone!(
+					#[weak] notes_list_clone, #[strong] note_path,
+					async move {
+						Notes::delete(&PathBuf::from(&note_path)).await;
+						notes_list_clone.borrow_mut().refresh().await;
+					})
+				);
 			},
 			|| {}
 		)

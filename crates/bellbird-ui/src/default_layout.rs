@@ -72,7 +72,7 @@ windowhandle label {
 
 .notes-panel listview { padding: 0 5px; }
 
-.notes-panel > label {
+.notes-panel > box > label {
 	text-transform: uppercase;
 	font-weight: 700;
 	color: #A5A1BC;

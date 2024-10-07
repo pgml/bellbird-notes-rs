@@ -1,6 +1,7 @@
 use std::{cell::RefCell, path::PathBuf, rc::Rc, sync::Arc};
 
 use bellbird_core::directories::Directories;
+use glib::MainContext;
 use gtk::{gio, prelude::*};
 
 use crate::{dialogue::Dialogue, directory_tree::DirectoryTree};
@@ -50,14 +51,24 @@ impl DirectoryTreeContextMenu {
 		let rename_folder = gio::SimpleAction::new("rename-folder", None);
 		{
 			let self_clone = Arc::clone(&self);
-			rename_folder.connect_activate(move |_, _| self_clone.rename_folder());
+			rename_folder.connect_activate(move |_, _| {
+				MainContext::default().spawn_local(glib::clone!(
+					#[weak] self_clone,
+					async move { self_clone.rename_folder().await; }
+				));
+			});
 		}
 		app_clone.add_action(&rename_folder);
 
 		let delete_folder = gio::SimpleAction::new("delete-folder", None);
 		{
 			let self_clone = Arc::clone(&self);
-			delete_folder.connect_activate(move |_, _| self_clone.delete_folder());
+			delete_folder.connect_activate(move |_, _| {
+				MainContext::default().spawn_local(glib::clone!(
+					#[weak] self_clone,
+					async move { self_clone.delete_folder().await; }
+				));
+			});
 		}
 		app_clone.add_action(&delete_folder);
 	}
@@ -73,18 +84,18 @@ impl DirectoryTreeContextMenu {
 				let mut path = PathBuf::from(directory_tree_clone.borrow_mut()
 					                           .path.to_str().unwrap_or(""));
 				path.push(&folder);
-				Directories::create(&path);
+				let _ = Directories::create(&path);
 				directory_tree_clone.borrow_mut().refresh();
 			},
 			|| {}
 		)
 	}
 
-	fn rename_folder(&self) {
+	async fn rename_folder(&self) {
 		let directory_tree_clone = self.directory_tree.clone();
 		let dialogue = Dialogue::new(&self.app);
 		let pathbuf_rc = self.directory_tree.borrow_mut().selected_ctx_path.clone();
-		let (full_path, _, file_stem) = self.get_path_and_stem(&pathbuf_rc);
+		let (full_path, _, file_stem) = self.get_path_and_stem(&pathbuf_rc).await;
 		dialogue.input(
 			"Rename Folder",
 			&format!("Rename ´{}´ to:", file_stem),
@@ -94,38 +105,39 @@ impl DirectoryTreeContextMenu {
 					                           .path.to_str().unwrap_or(""));
 				new_path.push(&folder);
 				let old_path = PathBuf::from(&full_path);
-				Directories::rename(&old_path, &new_path);
+				let _ = Directories::rename(&old_path, &new_path);
 				directory_tree_clone.borrow_mut().refresh();
 			},
 			|| {}
 		)
 	}
 
-	fn delete_folder(&self) {
+	async fn delete_folder(&self) {
 		// this whole thing is pretty ugly
 		// but works for now
 		let app_clone = self.app.clone();
 		let directory_tree_clone = self.directory_tree.clone();
 		let dialogue = Dialogue::new(&app_clone);
 		let pathbuf_rc = self.directory_tree.borrow_mut().selected_ctx_path.clone();
-		let (full_path, directory_path, _) = self.get_path_and_stem(&pathbuf_rc);
+		let (full_path, directory_path, _) = self.get_path_and_stem(&pathbuf_rc).await;
 		dialogue.warning_yes_no(
 			"Delete Folder",
 			"Do you really want to delete this folder?\n(Note: its content will also be deleted)",
 			&format!("´{}´", directory_path),
 			move || {
-				Directories::delete(&PathBuf::from(&full_path), true);
+				let _ = Directories::delete(&PathBuf::from(&full_path), true);
 				directory_tree_clone.borrow_mut().refresh();
 			},
 			|| {}
 		)
 	}
 
-	fn get_path_and_stem(&self, path: &Rc<RefCell<PathBuf>>) -> (String, String,  String) {
+	async fn get_path_and_stem(&self, path: &Rc<RefCell<PathBuf>>) -> (String, String,  String) {
 		let directory_path = path.borrow_mut();
 		let file_stem = directory_path.file_stem().unwrap()
-			              .to_str().unwrap().to_string();
-		let bellbird_root = Directories::root_directory().display().to_string();
+			.to_str().unwrap().to_string();
+		let bellbird_root = Directories::bb_root_directory().unwrap_or("".into())
+			.display().to_string();
 		let full_path = directory_path.display().to_string();
 		let directory_path = full_path.replace(&bellbird_root, "");
 		(full_path, directory_path, file_stem)

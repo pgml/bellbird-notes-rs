@@ -37,7 +37,6 @@ impl<'a> DirectoryTree {
 	) -> Self {
 		let model = gio::ListStore::new::<gtk::Label>();
 		let model_clone = model.clone();
-		let config = Config::new();
 
 	  let factory = gtk::SignalListItemFactory::new();
 		factory.connect_setup(move |_factory, item| {
@@ -93,8 +92,8 @@ impl<'a> DirectoryTree {
 			let path = tree_item.widget_name();
 			model.select_item(position, true);
 
-			config.set_value(
-				ConfigSections::General,
+			let _ = Config::new().set_config_value(
+				ConfigSections::General.as_str(),
 				ConfigOptions::CurrentDirectory,
 				path.to_string()
 			);
@@ -126,7 +125,7 @@ impl<'a> DirectoryTree {
 	}
 
 	fn append_to_model(&self, path: &Path) {
-		if let Ok(directories) = Directories::list(&path, 1) {
+		if let Some(directories) = Directories::list(&path, 1) {
 			directories.iter().for_each(|directory| {
 				let dir_name = directory.name.clone();
 				let path = directory.path.display().to_string();
@@ -210,7 +209,8 @@ impl<'a> DirectoryTree {
 		let app_clone = app.clone();
 		let self_clone = self.clone();
 
-		ContextMenu::new(sections, &self.list_view, 180).build(move |widget| {
+		let list_view = vec![self.list_view.clone()];
+		ContextMenu::new(sections, list_view, 180).build(move |widget| {
 			let actions = vec![
 				"open-folder-in-tab",
 				"duplicate-folder",

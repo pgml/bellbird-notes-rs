@@ -1,15 +1,10 @@
-use std::sync::OnceLock;
-
 use gtk::{
-	glib::{
-		self,
-		subclass::Signal,
-	},
+	glib,
 	//prelude::ObjectExt,
 	subclass::prelude::*
 };
 
-#[derive(Debug, Default, gtk::CompositeTemplate)]
+#[derive(Debug, gtk::CompositeTemplate)]
 #[template(resource = "/com/bellbird/notes/ui/notes_list_row.ui")]
 pub struct NotesListItem {
 	#[template_child]
@@ -18,6 +13,24 @@ pub struct NotesListItem {
 	pub name: TemplateChild<gtk::Label>,
 	#[template_child]
 	pub path: TemplateChild<gtk::Label>,
+
+	//pub name: RefCell<Option<String>>,
+	//pub path: RefCell<Option<String>>,
+	//pub is_pinned: RefCell<Option<bool>>,
+}
+
+impl Default for NotesListItem {
+	fn default() -> Self {
+		Self {
+			icon: TemplateChild::default(),
+			name: TemplateChild::default(),
+			path: TemplateChild::default(),
+
+			//name: RefCell::new(None),
+			//path: RefCell::new(None),
+			//is_pinned: RefCell::new(Some(false)),
+		}
+	}
 }
 
 #[glib::object_subclass]
@@ -36,19 +49,19 @@ impl ObjectSubclass for NotesListItem {
 }
 
 impl ObjectImpl for NotesListItem {
-	fn signals() -> &'static [Signal] {
-		static SIGNALS: OnceLock<Vec<Signal>> = OnceLock::new();
-		SIGNALS.get_or_init(|| {
-			vec![Signal::builder("activate")
-				.build()]
-		})
-	}
+	//fn signals() -> &'static [Signal] {
+	//	static SIGNALS: OnceLock<Vec<Signal>> = OnceLock::new();
+	//	SIGNALS.get_or_init(|| {
+	//		vec![Signal::builder("activate")
+	//			.build()]
+	//	})
+	//}
 
 	//fn properties() -> &'static [glib::ParamSpec] {
 	//	static PROPERTIES: OnceLock<Vec<glib::ParamSpec>> = OnceLock::new();
 	//	PROPERTIES.get_or_init(|| {
 	//		vec![
-	//			glib::ParamSpecObject::builder("icon").build(),
+	//			glib::ParamSpecString::builder("icon").build(),
 	//			glib::ParamSpecString::builder("name").default_value("Name").build(),
 	//			glib::ParamSpecString::builder("path").default_value("Path").build(),
 	//		]
@@ -93,4 +106,3 @@ impl ObjectImpl for NotesListItem {
 
 impl BoxImpl for NotesListItem {}
 impl WidgetImpl for NotesListItem {}
-impl NotesListItem {}

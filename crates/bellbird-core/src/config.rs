@@ -1,10 +1,12 @@
-use std::fs;
-use std::path::{Path, PathBuf};
+//use async_std::path::PathBuf;
+use std::path::PathBuf;
 
 use configparser::ini::Ini;
 use ::directories::BaseDirs;
 use regex::Regex;
+use anyhow::Result;
 
+#[derive(Debug)]
 pub enum ConfigSections {
 	General,
 	SideBar,
@@ -14,7 +16,7 @@ pub enum ConfigSections {
 }
 
 impl ConfigSections {
-	fn as_str(&self) -> &str {
+	pub fn as_str(&self) -> &str {
 		match self {
 			ConfigSections::General => "General",
 			ConfigSections::SideBar => "SideBar",
@@ -25,6 +27,7 @@ impl ConfigSections {
 	}
 }
 
+#[derive(Debug)]
 pub enum ConfigOptions {
 	DefaultNotesDirectory,
 	UserNotesDirectory,
@@ -34,6 +37,8 @@ pub enum ConfigOptions {
 	OpenNotes,
 	Visible,
 	Width,
+	CaretPosition,
+	Pinned,
 }
 
 impl ConfigOptions {
@@ -47,16 +52,26 @@ impl ConfigOptions {
 			ConfigOptions::OpenNotes => "OpenNotes",
 			ConfigOptions::Visible => "Visible",
 			ConfigOptions::Width => "Width",
+			ConfigOptions::CaretPosition => "CaretPosition",
+			ConfigOptions::Pinned => "Pinned",
 		}
 	}
 }
 
 #[derive(Debug, Clone)]
-pub struct Config;
+pub struct Config {
+	ini: Ini,
+	ini_file: PathBuf,
+}
 
 impl<'a> Config {
 	pub fn new() -> Self {
-		Self {}
+		let ini = Ini::new_cs();
+
+		Self {
+			ini,
+			ini_file: PathBuf::new(),
+		}
 	}
 
 	pub fn app_version(&self) -> String {
@@ -95,94 +110,178 @@ impl<'a> Config {
 		directory_name.to_lowercase()
 	}
 
-	fn config_dir(&self) -> PathBuf {
-		match BaseDirs::new() {
-			Some(base_dirs) => {
-				let os_config_dir = base_dirs.config_dir().display().to_string();
-				let app_config_dir = self.application_directory_name();
-				//OsStr::new(&format!("{os_config_dir}/{app_config_dir}")).into()
-				PathBuf::from(&format!("{os_config_dir}/{app_config_dir}"))
+	fn config_dir(&self) -> Result<PathBuf> {
+		if let Some(base_dirs) = BaseDirs::new() {
+			let os_config_dir = base_dirs.config_dir().display().to_string();
+			let app_config_dir = self.application_directory_name();
+			return Ok(PathBuf::from(&format!("{os_config_dir}/{app_config_dir}")))
+		}
+		Err(anyhow::anyhow!("Could not find config directory."))
+	}
+
+	pub fn config_file(&self, is_meta_info: bool) -> Result<PathBuf, anyhow::Error> {
+		match self.config_dir() {
+			Ok(config_dir) => {
+				if std::path::Path::new(&config_dir).is_dir() == false {
+					return Err(anyhow::anyhow!(
+						"Could not find config directory: {}",
+						config_dir.display().to_string()
+					));
+				}
+
+				let mut filename = self.application_directory_name();
+
+				if is_meta_info {
+					filename = format!("{filename}_metainfos");
+				}
+				else {
+					filename = format!("{filename}.conf");
+				}
+
+				let mut file_path = PathBuf::from(config_dir);
+				file_path.push(&filename);
+				return Ok(file_path)
 			},
-			None => PathBuf::new()
+			Err(e) => Err(e)
 		}
 	}
 
-	pub fn config_file(&self, is_meta_info: bool) -> PathBuf {
-		let binding = self.config_dir();
-		let config_dir = binding.as_path();
-
-		if Path::new(&config_dir).is_dir() == false {
-			return PathBuf::new();
-		}
-
-		let mut filename = self.application_directory_name();
-
-		if is_meta_info {
-			filename = format!("{filename}_metainfos");
-		}
-		else {
-			filename = format!("{filename}.conf");
-		}
-
-		let mut file_path = PathBuf::from(config_dir);
-		file_path.push(&filename);
-		file_path
-	}
-
-	pub fn value(
+	pub fn meta_info(
 		&self,
-		section: ConfigSections,
+		section: &str,
 		option: ConfigOptions,
-		//is_meta_info: bool,
+	) -> Option<String> {
+		self.value(section, option, true)
+	}
+
+	fn load_file_async(&mut self, is_meta_info: bool) {
+		self.ini_file = self.config_file(is_meta_info).unwrap();
+		let _ = self.ini.load_async(&self.ini_file);
+	}
+
+	fn load_file(&mut self, is_meta_info: bool) {
+		self.ini_file = self.config_file(is_meta_info).unwrap();
+		let _ = self.ini.load(&self.ini_file);
+	}
+
+	pub fn config_value(
+		&self,
+		section: &str,
+		option: ConfigOptions,
+	) -> Option<String> {
+		self.value(section, option, false)
+	}
+
+	fn value(
+		&self,
+		section: &str,
+		option: ConfigOptions,
+		is_meta_info: bool,
 		//file: &str
-	) -> String {
-		let config_file = self.config_file(false);
+	) -> Option<String> {
+		if let Ok(config_file) = self.config_file(is_meta_info) {
+			if !config_file.exists() && !config_file.is_file() {
+				return None
+			}
 
-		let is_file = fs::metadata(&config_file)
-			.expect("Couldn't read...")
-			.is_file();
+			let mut config = Ini::new_cs();
+			let mut config_value = None;
 
-		if !Path::new(&config_file).exists() && !is_file {
-			return String::new();
+			if let Ok(_) = config.load(&config_file) {
+				if let Some(value) = config.get(&section, &option.as_str()) {
+					config_value = Some(value.to_string());
+				}
+			}
+			return Some(config_value)?
 		}
+		None
+	}
 
-		let mut config = Ini::new_cs();
-		let mut config_value = String::new();
+	pub fn sections_by_value(
+		&mut self,
+		option: ConfigOptions,
+		expected_value: String
+	) -> Option<Vec<String>> {
+		self.load_file(true);
 
-		if let Ok(_) = config.load(&config_file) {
-			if let Some(value) = config.get(&section.as_str(), &option.as_str()) {
-				config_value = value.to_string();
+		let mut sections = vec![];
+		for section in self.ini.sections().iter() {
+			let value = self.ini.get(&section, &option.as_str());
+			if value.is_some() && !expected_value.is_empty() {
+				if value.unwrap() == expected_value {
+					sections.push(section.to_string());
+				}
 			}
 		}
-		config_value
+
+		return Some(sections);
 	}
 
-	pub fn set_value(
-		&self,
-		section: ConfigSections,
+	pub async fn set_config_value_async(
+		&mut self,
+		section: &str,
 		option: ConfigOptions,
-		value: String
-	) {
-		let mut config = Ini::new_cs();
-		let config_file = self.config_file(false);
+		value: String,
+	) -> Result<()> {
+		self.set_value_async(section, option, value, false).await
+	}
 
-		match config.load(&config_file) {
-			Ok(_) => {
-				// read the existing config because it sometimes gets truncated
-				let outstring = config.writes();
-				let _ = config.read(outstring);
-				config.set(section.as_str(), option.as_str(), Some(value.clone()));
-				match config.write(&config_file) {
-					Ok(_) => true,
-					Err(e) => {
-						println!("{e}");
-						false
-					},
-				};
-			},
-			Err(e) => {
-				println!("{e}");
-			},
-		}
+	pub fn set_config_value(
+		&mut self,
+		section: &str,
+		option: ConfigOptions,
+		value: String,
+	) -> Result<()> {
+		self.set_value(section, option, value, false)
+	}
+
+	pub async fn set_meta_value_async(
+		&mut self,
+		section: &str,
+		option: ConfigOptions,
+		value: String,
+	) -> Result<()> {
+		self.set_value_async(section, option, value, true).await
+	}
+
+	pub fn set_meta_value(
+		&mut self,
+		section: &str,
+		option: ConfigOptions,
+		value: String,
+	) -> Result<()> {
+		self.set_value(section, option, value, true)
+	}
+
+	async fn set_value_async(
+		&mut self,
+		section: &str,
+		option: ConfigOptions,
+		value: String,
+		is_meta_info: bool
+	) -> Result<()> {
+		self.load_file_async(is_meta_info);
+		// read the existing config because it sometimes gets truncated
+		let outstring = self.ini.writes();
+		let _ = self.ini.read(outstring);
+		self.ini.set(section, option.as_str(), Some(value.clone()));
+		let _ = self.ini.write_async(&self.ini_file).await;
+		Ok(())
+	}
+
+	fn set_value(
+		&mut self,
+		section: &str,
+		option: ConfigOptions,
+		value: String,
+		is_meta_info: bool
+	) -> Result<()> {
+		self.load_file(is_meta_info);
+		// read the existing config because it sometimes gets truncated
+		let outstring = self.ini.writes();
+		let _ = self.ini.read(outstring);
+		self.ini.set(section, option.as_str(), Some(value.clone()));
+		let _ = self.ini.write(&self.ini_file);
+		Ok(())
 	}
 }

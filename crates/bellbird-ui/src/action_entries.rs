@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use glib::MainContext;
 use gtk::prelude::*;
 
 use gtk::gio;
@@ -44,8 +45,16 @@ impl<'a> ActionEntries<'a> {
 					.expect("The variant nees to be of type `String`");
 				let path_buf = std::path::PathBuf::from(path.clone());
 
-				directory_tree_clone.borrow_mut().update_current_directory(path.clone().into());
-				notes_list_clone.borrow_mut().update_path(path_buf);
+				MainContext::default().spawn_local(glib::clone!(
+					#[strong]
+					directory_tree_clone,
+					#[strong]
+					notes_list_clone,
+					async move {
+						directory_tree_clone.borrow_mut().update_current_directory(path.clone().into());
+						notes_list_clone.borrow_mut().update_path(path_buf.into()).await;
+					}
+				));
 			})
 			.build();
 
@@ -61,9 +70,14 @@ impl<'a> ActionEntries<'a> {
 				let path = parameter
 					.expect("Could not get Parameter")
 					.get::<String>()
-					.expect("The variant needs to be of type `String`");
-				notes_list_clone.borrow_mut().update_current_note(path.clone().into());
-				editor_clone.borrow_mut().update_path(path.into());
+					.expect("The variant nees to be of type `String`");
+				MainContext::default().spawn_local(glib::clone!(
+					#[weak] notes_list_clone, #[weak] editor_clone, #[strong] path,
+					async move {
+						notes_list_clone.borrow_mut().update_current_note(path.clone().into());
+						editor_clone.borrow_mut().update_path(path.into()).await;
+					}
+				));
 			})
 			.build();
 
