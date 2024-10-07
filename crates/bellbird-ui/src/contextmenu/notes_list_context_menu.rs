@@ -133,7 +133,7 @@ impl NotesListContextMenu {
 		let notes_list_clone = self.notes_list.clone();
 		let binding = notes_list_clone.borrow_mut();
 		let path = binding.selected_ctx_path.borrow_mut();
-		let is_pinned = Notes::is_pinned(&path).await;
+		let is_pinned = Notes::is_pinned(&path);
 		Notes::set_is_pinned(&path, !is_pinned);
 		binding.clone().refresh().await;
 	}
