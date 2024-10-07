@@ -308,9 +308,8 @@ impl<'a> NotesList {
 			"Pinned",
 			pinned_view,
 			false,
-			glib::clone!(
-				#[weak] pinned_view, #[weak] view,
-				move |wrapper, scrolled_window, _| {
+			glib::clone!(#[weak] pinned_view,
+				move |wrapper, _scrolled_window, _| {
 					let (min_size, _) = pinned_view.preferred_size();
 					wrapper.set_height_request(min_size.height());
 					//println!("{:?} {:?}", pinned_view.height_request(), view.height());

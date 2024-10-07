@@ -21,7 +21,6 @@ pub struct ContextMenu<'a> {
 	pub sections: Vec<BbMenuSection<'a>>,
 	pub parent: Vec<gtk::ListView>,
 	pub width: i32,
-	popover: gtk::PopoverMenu,
 }
 
 impl<'a> ContextMenu<'a> {
@@ -30,13 +29,10 @@ impl<'a> ContextMenu<'a> {
 		parent: Vec<gtk::ListView>,
 		width: i32
 	) -> Self {
-		let context_menu = gio::Menu::new();
-
 		Self {
 			sections,
 			parent,
 			width,
-			popover: gtk::PopoverMenu::from_model(Some(&context_menu))
 		}
 	}
 

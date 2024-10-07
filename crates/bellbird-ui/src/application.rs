@@ -16,7 +16,6 @@ use crate::directory_tree::DirectoryTree;
 use crate::editor_view::Editor;
 use crate::notes_list::NotesList;
 use crate::directory_tree;
-use crate::notes_list;
 use crate::editor_view;
 use crate::default_layout;
 
