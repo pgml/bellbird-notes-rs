@@ -144,7 +144,11 @@ impl<'a> Editor {
 	async fn place_cursor(&self, buffer: &Buffer) {
 		if let Some(cursor_position ) = self.caret_position() {
 			let start_iter = buffer.start_iter();
-			let buffer_length = buffer.text(&start_iter, &buffer.end_iter(), false).len() as i32;
+			let buffer_length = buffer.text(
+				&start_iter,
+				&buffer.end_iter(),
+				false
+			).len() as i32;
 			let position = cursor_position.clamp(0, buffer_length);
 			let mut iter = buffer .start_iter();
 			iter.set_offset(position);
