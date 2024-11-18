@@ -52,7 +52,7 @@ impl<'a> NotesList {
 		}
 	}
 
-	pub async fn update_path(&mut self, path: PathBuf) {
+	pub async fn update_path(&mut self, path: PathBuf) -> Option<bool> {
 		self.path = path.clone();
 		let (model, model_pinned) = &self.model;
 		let this = self.clone();
@@ -89,7 +89,10 @@ impl<'a> NotesList {
 					});
 					this.set_selection();
 				}
-			}));
+			}
+		));
+
+		Some(true)
 	}
 
 	fn create_list_view(
@@ -187,12 +190,14 @@ impl<'a> NotesList {
 
 		if let Some(selection_model) = list_view.model() {
 			for index in 0..selection_model.n_items() {
-				if let Some(item) = selection_model.item(index) {
-					let path = item.downcast::<ListModelItem>().unwrap().path();
-					if path.to_string() == current_note.borrow_mut().display().to_string() {
-						selection_model.select_item(index, true);
-						break;
-					}
+				let Some(item) = selection_model.item(index) else {
+					continue;
+				};
+
+				let path = item.downcast::<ListModelItem>().unwrap().path();
+				if path.to_string() == current_note.borrow_mut().display().to_string() {
+					selection_model.select_item(index, true);
+					break;
 				}
 			}
 		}
@@ -223,6 +228,7 @@ impl<'a> NotesList {
 
 		let (list_view, list_view_pinned) = &self.list_view;
 		let list_views = vec![list_view.clone(), list_view_pinned.clone()];
+
 		ContextMenu::new(sections, list_views, 180).build(move |widget| {
 			let actions = vec![
 				"open-note-in-tab",
@@ -239,36 +245,45 @@ impl<'a> NotesList {
 			if widget.widget_name() != "GtkListView" {
 				match widget.parent() {
 					Some(parent) => {
-						#[allow(unused)]
-						let mut should_activate_on_note_items = false;
-						let mut path = PathBuf::from("");
-
-						if parent.widget_name() == "NotesListRow" {
-							should_activate_on_note_items = true;
-							if let Some(label) = parent.last_child().and_downcast::<gtk::Label>() {
-								path.push(label.label());
-							}
-						}
-						else {
-							should_activate_on_note_items = true;
-							if let Some(first_child) = parent.first_child() {
-								if let Some(label) = first_child.last_child().and_downcast::<gtk::Label>() {
-									path.push(label.label());
-								}
-							}
-						}
-
-						self_clone.set_selected_ctx_note(path.clone().into());
-						if !path.as_os_str().is_empty() && should_activate_on_note_items {
-							for action in actions.iter() {
-								app_clone.action_enabled_changed(action, true);
-							}
-						}
+						self_clone.handle_context_menu_parent(&app_clone, &parent, &actions);
 					},
 					None => println!("nope")
 				}
 			}
 		});
+	}
+
+	fn handle_context_menu_parent(
+		&self,
+		app: &adw::Application,
+		parent: &gtk::Widget,
+		actions: &Vec<&str>
+	) {
+		#![allow(unused)]
+		let mut should_activate_on_note_items = false;
+		let mut path = PathBuf::from("");
+
+		if parent.widget_name() == "NotesListRow" {
+			should_activate_on_note_items = true;
+			if let Some(label) = parent.last_child().and_downcast::<gtk::Label>() {
+				path.push(label.label());
+			}
+		}
+		else {
+			should_activate_on_note_items = true;
+			if let Some(first_child) = parent.first_child() {
+				if let Some(label) = first_child.last_child().and_downcast::<gtk::Label>() {
+					path.push(label.label());
+				}
+			}
+		}
+
+		self.set_selected_ctx_note(path.clone().into());
+		if !path.as_os_str().is_empty() && should_activate_on_note_items {
+			for action in actions.iter() {
+				app.action_enabled_changed(action, true);
+			}
+		}
 	}
 
 	fn _enable_actions(&self, app: &adw::Application, actions: Vec<&str>) {
