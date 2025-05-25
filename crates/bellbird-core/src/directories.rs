@@ -58,7 +58,7 @@ impl Directories {
 			let value = config.config_value(
 				ConfigSections::General.as_str(),
 				ConfigOptions::UserNotesDirectory,
-			).unwrap();
+			)?;
 
 			root_dir.push(value);
 			return Some(root_dir);
@@ -122,8 +122,7 @@ impl Directories {
 		}
 	}
 
-	pub fn create(path: &Path) -> Result<(), std::io::Error>
-	{
+	pub fn create(path: &Path) -> Result<(), std::io::Error> {
 		fs::create_dir(path).map_err(|e| {
 			eprintln!("Failed to create directory: {:?}", e);
 			e
@@ -137,8 +136,7 @@ impl Directories {
 		})
 	}
 
-	pub fn delete(path: &Path, mut delete_files: bool) -> Result<(), std::io::Error>
-	{
+	pub fn delete(path: &Path, mut delete_files: bool) -> Result<(), std::io::Error> {
 		if !delete_files {
 			delete_files = false
 		}

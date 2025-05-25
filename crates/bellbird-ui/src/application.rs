@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -21,7 +22,8 @@ use crate::default_layout;
 
 pub fn run() -> glib::ExitCode {
 	let config = Config::new();
-	let app = adw::Application::builder().application_id(config.app_id()).build();
+	let app = adw::Application::builder()
+		.application_id(config.app_id()).build();
 
 	app.connect_startup(|_| load_css());
 	//app.connect_activate(build_ui);
@@ -52,10 +54,24 @@ fn build_ui(app: &adw::Application) {
 	window.set_default_size(1000, 600);
 	window.set_child(Some(&window_box));
 
-	let bellbird_root = Directories::bb_root_directory().unwrap_or("".into());
-	let path = Directories::current_directory_path().unwrap();
-	let note_path = Notes::current_path().unwrap();
-	let directory_tree = Rc::new(RefCell::new(DirectoryTree::new(app, &bellbird_root)));
+	let bellbird_root = match Directories::bb_root_directory() {
+		Some(bb_root) => bb_root,
+		None => PathBuf::new()
+	};
+
+	let path = match Directories::current_directory_path() {
+		Some(p) => p,
+		None => PathBuf::new()
+	};
+
+	let note_path = match Notes::current_path() {
+		Some(n) => n,
+		None => PathBuf::new()
+	};
+
+	let directory_tree = Rc::new(RefCell::new(
+		DirectoryTree::new(app, &bellbird_root)
+	));
 	let notes_list = Rc::new(RefCell::new(NotesList::new(&path)));
 	let editor = Rc::new(RefCell::new(Editor::new(&note_path)));
 
