@@ -1,4 +1,4 @@
-use std::{fs, path::{Path, PathBuf}};
+use std::{fs,  path::{Path, PathBuf}};
 
 use directories::UserDirs;
 use walkdir::WalkDir;
@@ -61,6 +61,11 @@ impl Directories {
 			)?;
 
 			root_dir.push(value);
+
+			if !root_dir.exists() {
+				let _=  Directories::create(root_dir.as_path());
+			}
+
 			return Some(root_dir);
 		}
 		None
